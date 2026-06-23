@@ -110,7 +110,8 @@ npm run build
 npm run start
 ```
 
-The current app start command runs Next on port `4700`, which Railway can proxy normally.
+The production start script respects Railway's `PORT` env var automatically and
+falls back to `4700` locally.
 
 ### Git deploy flow
 
