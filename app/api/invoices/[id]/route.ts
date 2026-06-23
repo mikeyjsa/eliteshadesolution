@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { mutate, uid } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { promises as fs } from "fs";
-import path from "path";
 import { zar } from "@/lib/format";
-
-const PROOF_DIR = path.join(process.cwd(), "public", "uploads", "payment-proofs");
+import { PAYMENT_PROOFS_DIR } from "@/lib/storage-paths";
 
 async function saveProof(dataUrl: string, originalName?: string): Promise<string> {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -16,8 +14,8 @@ async function saveProof(dataUrl: string, originalName?: string): Promise<string
     safeExtFromName ??
     ({ "application/pdf": "pdf", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }[mime] || "bin");
   const file = `${uid("proof_")}.${ext}`;
-  await fs.mkdir(PROOF_DIR, { recursive: true });
-  await fs.writeFile(path.join(PROOF_DIR, file), Buffer.from(base64, "base64"));
+  await fs.mkdir(PAYMENT_PROOFS_DIR, { recursive: true });
+  await fs.writeFile(`${PAYMENT_PROOFS_DIR}/${file}`, Buffer.from(base64, "base64"));
   return `/uploads/payment-proofs/${file}`;
 }
 

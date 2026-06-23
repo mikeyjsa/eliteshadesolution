@@ -77,9 +77,6 @@ export default function Footer({ facebookUrl = "", instagramUrl = "" }: { facebo
               {instagramUrl && <a href={instagramUrl} target="_blank" rel="noreferrer" style={{ display: "block", color: "#9fb0bd", textDecoration: "none", fontSize: 13, padding: "3px 0" }}>Instagram →</a>}
             </div>
           )}
-          <Link href="/admin" style={{ color: "var(--color-silver)", fontSize: 12, textDecoration: "none", display: "inline-block", marginTop: 14 }}>
-            Staff login →
-          </Link>
         </div>
       </div>
       <div className="guyline" style={{ maxWidth: 1240, margin: "36px auto 0" }} />
