@@ -1,0 +1,298 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Elite Shade Solutions — design tokens (blueprint §07/§08)
+   Concept: "engineered tension" — taut sail geometry,
+   architectural restraint, technical-but-warm.
+   ============================================================ */
+@theme {
+  --color-navy: #283746;
+  --color-navy-deep: #1c2733;
+  --color-steel: #5b6b7a;
+  --color-silver: #aab4bd;
+  --color-mist: #e8ecef;
+  --color-sail: #ffffff;
+  --color-brass: #c9a24b;
+  --color-brass-soft: #f3ead4;
+  --color-signal: #3f8f5f;
+  --color-warn: #b5742b;
+  --color-ink: #22303c;
+  --color-line: #d6dde2;
+
+  --font-display: var(--font-montserrat), "Segoe UI", sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+
+  --shadow-lift: 0 10px 30px rgba(28, 39, 51, 0.12);
+  --shadow-card: 0 2px 8px rgba(28, 39, 51, 0.05);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--color-mist);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-10px) rotate(.4deg); }
+  66%       { transform: translateY(-6px) rotate(-.3deg); }
+}
+
+@keyframes shimmer-sweep {
+  from { transform: translateX(-120%) skewX(-12deg); }
+  to   { transform: translateX(220%) skewX(-12deg); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(201,162,75,.22); }
+  50%       { box-shadow: 0 6px 28px rgba(201,162,75,.55); }
+}
+
+@keyframes word-enter {
+  from { opacity: 0; transform: translateY(28px) skewY(2deg); }
+  to   { opacity: 1; transform: translateY(0) skewY(0); }
+}
+
+@keyframes draw-h {
+  from { width: 0; opacity: 0; }
+  to   { width: 100%; opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sail-billow {
+  0%, 100% { d: path("M68 96 Q280 38 492 72 Q470 200 280 248 Q90 200 68 96 Z"); }
+  50%       { d: path("M68 96 Q280 28 492 62 Q480 210 280 258 Q85 208 68 96 Z"); }
+}
+
+@keyframes count-up-flash {
+  0%   { color: var(--color-brass); }
+  100% { color: var(--color-navy); }
+}
+
+/* ── Tabular figures ─────────────────────────────────────────────────────── */
+.tnum { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ── Typography helpers ──────────────────────────────────────────────────── */
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-brass);
+}
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-brass {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  isolation: isolate;
+  background: var(--color-brass);
+  color: var(--color-navy-deep);
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1.5rem;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.18s ease,
+              background 0.15s ease;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+.btn-brass::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 0; right: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255,255,255,.45) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%) skewX(-12deg);
+  pointer-events: none;
+  opacity: 0;
+}
+.btn-brass:hover {
+  background: #d8b15c;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(201, 162, 75, 0.45);
+}
+.btn-brass:hover::after {
+  opacity: 1;
+  animation: shimmer-sweep 0.55s ease forwards;
+}
+.btn-brass:not(:hover)::after {
+  animation: none;
+  opacity: 0;
+  transform: translateX(-120%) skewX(-12deg);
+}
+.btn-brass:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-navy);
+  border: 1.5px solid var(--color-line);
+  border-radius: 10px;
+  padding: 0.8rem 1.4rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s;
+}
+.btn-ghost:hover {
+  border-color: var(--color-navy);
+  background: rgba(40, 55, 70, 0.06);
+  transform: translateY(-2px);
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--color-sail);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+/* 3-D tilt card — JS animates --rx / --ry CSS vars via AnimationLayer */
+.tilt-card {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  will-change: transform;
+}
+.tilt-card:hover {
+  box-shadow: var(--shadow-lift);
+}
+
+/* ── Scroll-reveal ───────────────────────────────────────────────────────── */
+/* Starts hidden; Reveal.tsx adds .in when element enters viewport */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Hero word stagger ───────────────────────────────────────────────────── */
+.hero-word {
+  display: inline-block;
+  opacity: 0;
+  animation: word-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* animation-delay set inline per word */
+}
+
+/* ── Hero illustration ───────────────────────────────────────────────────── */
+.hero-illustration {
+  animation: float-bob 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ── Gallery tiles ───────────────────────────────────────────────────────── */
+.es-tile {
+  transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .3s ease;
+}
+.es-tile:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: 0 18px 44px rgba(28,39,51,.16);
+}
+/* Photo zoom inside tiles */
+.es-tile img, .es-tile .next-image {
+  transition: transform .55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.es-tile:hover img, .es-tile:hover .next-image {
+  transform: scale(1.06);
+}
+
+/* ── FAQ accordion spring ────────────────────────────────────────────────── */
+.faq-body {
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Guyline divider ─────────────────────────────────────────────────────── */
+.guyline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-silver), transparent);
+  animation: draw-h 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Scroll progress bar (rendered by AnimationLayer) ───────────────────── */
+#scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--color-brass);
+  z-index: 9999;
+  width: 0%;
+  transition: width 0.08s linear;
+  pointer-events: none;
+}
+
+/* ── Stat number flash on count ──────────────────────────────────────────── */
+.stat-num.counting {
+  animation: count-up-flash 0.4s ease;
+}
+
+/* ── Admin shell (unchanged) ─────────────────────────────────────────────── */
+.admin-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 9px;
+  color: #b9c4cd;
+  font-size: 0.86rem;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.admin-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+.admin-link.active {
+  background: rgba(201,162,75,.12);
+  color: #fff;
+  border-left-color: var(--color-brass);
+}
+
+input, select, textarea { font-family: inherit; }
+::selection { background: var(--color-brass); color: var(--color-navy-deep); }
+
+/* ── Reduced-motion respect ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .hero-word { opacity: 1; }
+}
