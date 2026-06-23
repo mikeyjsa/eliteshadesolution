@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { currentUser } from "@/lib/auth";
 import { getDB } from "@/lib/db";
 import AdminHead from "@/components/AdminHead";
 import SettingsForm from "@/components/SettingsForm";
@@ -5,6 +7,9 @@ import SettingsForm from "@/components/SettingsForm";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
+  const me = await currentUser();
+  if (!me || me.role !== "admin") redirect("/admin");
+
   const db = await getDB();
   return (
     <>

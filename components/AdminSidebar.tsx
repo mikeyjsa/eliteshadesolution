@@ -16,7 +16,7 @@ const CONFIG_ITEMS_ALL = [
   ["/admin/reports",  "Reports",       "▱"],
   ["/admin/backups",  "Backups",       "⧉"],   // admin only
   ["/admin/users",    "Users",         "👤"],   // admin only
-  ["/admin/settings", "Settings",      "⚙"],
+  ["/admin/settings", "Settings",      "⚙"],   // admin only
 ];
 
 export default function AdminSidebar({
@@ -39,7 +39,7 @@ export default function AdminSidebar({
 
   // Filter Users link for managers
   const configItems = CONFIG_ITEMS_ALL.filter(([href]) =>
-    (href !== "/admin/users" && href !== "/admin/backups") || isAdmin
+    (href !== "/admin/users" && href !== "/admin/backups" && href !== "/admin/settings") || isAdmin
   );
 
   async function logout() {

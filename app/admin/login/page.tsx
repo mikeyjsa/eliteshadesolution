@@ -51,11 +51,6 @@ export default function Login() {
         />
         {err && <p style={{ color: "#a23c34", fontSize: 13, margin: "0 0 12px" }}>{err}</p>}
         <button className="btn-brass" disabled={busy} style={{ width: "100%" }}>{busy ? "Checking…" : "Sign in →"}</button>
-        <div style={{ marginTop: 16, padding: "12px 14px", background: "var(--color-mist)", borderRadius: 8, fontSize: 11.5, color: "var(--color-steel)", lineHeight: 1.7 }}>
-          <strong style={{ color: "var(--color-navy)" }}>Scaffold accounts:</strong><br />
-          owner@eliteshade.co.za / eliteshade<br />
-          partner@eliteshade.co.za / partner123
-        </div>
       </form>
     </div>
   );
