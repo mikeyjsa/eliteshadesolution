@@ -10,7 +10,7 @@ business blueprint (`../Elite-Shade-Solutions-Business-Blueprint.html`).
 - **Next.js 15** (App Router) + React 19 + TypeScript
 - **Tailwind v4** (`@theme` tokens) + custom CSS — "engineered tension" design system
 - **File-based JSON store** (`.data/db.json`, auto-seeded) via `lib/db.ts` — swap to Supabase/Postgres later
-- **File-backed uploads** under `public/uploads/` — only relative file paths are stored in the DB, never binary file contents
+- **File-backed uploads** under `.data/uploads/`, served at `/uploads/...` — only relative file paths are stored in the DB, never binary file contents
 - **Mock PayFast** (hosted page + ITN webhook) and **mock email** — swap real keys later
 - **pdf-lib** for branded invoice PDFs
 - Optional **AES-256-GCM at-rest encryption** for the live DB and backups via `ELITE_DB_PASSPHRASE`
@@ -38,13 +38,14 @@ Persistent runtime data lives in the filesystem, not in the git checkout:
 
 - `.data/db.json` — live database
 - `.data/backups/` — hourly and manual DB backups
-- `public/uploads/` — all uploaded files
-- `public/uploads/payment-proofs/` — invoice proof-of-payment files
+- `.data/uploads/` — all uploaded files
+- `.data/uploads/payment-proofs/` — invoice proof-of-payment files
 
 Important:
 
 - The DB stores **paths** like `/uploads/payment-proofs/proof_abc123.pdf`, not the uploaded file bytes.
-- For deployment, both `.data/` and `public/uploads/` must be backed by persistent storage.
+- Uploaded files are served by the app from `app/uploads/[...slug]/route.ts`, but physically stored inside `.data/uploads/`.
+- For deployment, only `.data/` needs persistent storage.
 - If you later add gallery/CMS file uploads, keep storing the file on disk first and only save its relative path in the DB.
 
 ## Public site
@@ -87,18 +88,17 @@ Recommended:
 - Use a long random `ELITE_DB_PASSPHRASE` and keep it stable. Changing it later without re-encrypting data will prevent the app from reading existing encrypted DB/backup files.
 - Set your final custom domain in `NEXT_PUBLIC_SITE_URL` so canonicals, sitemap, robots, and social cards point at the correct host.
 
-### Required persistent volumes
+### Required persistent volume
 
-In Railway, mount persistent storage to both of these paths inside the service:
+In Railway, mount one persistent volume to this path inside the service:
 
 - `/app/.data`
-- `/app/public/uploads`
 
-Why both matter:
+Why this is enough:
 
-- `.data` holds the live DB and hourly/manual backups.
-- `public/uploads` holds uploaded files like payment proofs.
-- Without those mounts, deploys/restarts will lose your runtime data.
+- `.data` holds the live DB, hourly/manual backups, and uploaded files.
+- Uploads are now stored in `.data/uploads/` and served by the app at `/uploads/...`.
+- Without this mount, deploys/restarts will lose DB, backups, and uploaded files.
 
 ### Build and start commands
 
@@ -117,7 +117,7 @@ The current app start command runs Next on port `4700`, which Railway can proxy 
 1. Push this repository to GitHub.
 2. In Railway, create a new project from that repo.
 3. Add the environment variables above.
-4. Attach persistent volumes to `/app/.data` and `/app/public/uploads`.
+4. Attach a persistent volume to `/app/.data`.
 5. Deploy once.
 6. Visit `/admin` and change the scaffold credentials/settings immediately.
 
@@ -125,7 +125,7 @@ The current app start command runs Next on port `4700`, which Railway can proxy 
 
 1. Confirm `.data/db.json` is created on the mounted volume.
 2. Create a manual backup in `/admin/backups` and confirm it appears.
-3. Upload a proof of payment on an invoice and confirm the file lands under `public/uploads/payment-proofs/`.
+3. Upload a proof of payment on an invoice and confirm the file lands under `.data/uploads/payment-proofs/`.
 4. Open `https://your-domain.com/robots.txt` and `https://your-domain.com/sitemap.xml`.
 5. Verify that a social share preview uses the generated Open Graph image.
 

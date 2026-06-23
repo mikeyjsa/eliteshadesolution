@@ -4,5 +4,5 @@ export const DATA_DIR = path.join(process.cwd(), ".data");
 export const DB_FILE = path.join(DATA_DIR, "db.json");
 export const BACKUP_DIR = path.join(DATA_DIR, "backups");
 export const PUBLIC_DIR = path.join(process.cwd(), "public");
-export const UPLOADS_DIR = path.join(PUBLIC_DIR, "uploads");
+export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 export const PAYMENT_PROOFS_DIR = path.join(UPLOADS_DIR, "payment-proofs");
