@@ -11,6 +11,7 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.resend_api_key === "string") s.resend_api_key = body.resend_api_key.trim();
     if (typeof body.ga_measurement_id === "string") s.ga_measurement_id = body.ga_measurement_id.trim();
     if (typeof body.company_address === "string") s.company_address = body.company_address;
+    if (typeof body.eft_details === "string") s.eft_details = body.eft_details;
     if (typeof body.facebook_url === "string") s.facebook_url = body.facebook_url.trim();
     if (typeof body.instagram_url === "string") s.instagram_url = body.instagram_url.trim();
     if (typeof body.vat_enabled === "boolean") s.vat_enabled = body.vat_enabled;

@@ -40,30 +40,62 @@ const BLOCK_FIELDS: Record<string, { label: string; fields: { key: string; label
   },
 };
 
+const EMPTY_DRAFT = { title: "", body: "", suburb: "", tag: "", excerpt: "" };
+
 export default function ContentManager({ items }: { items: Content[] }) {
   const [tab, setTab] = useState<"gallery" | "post" | "blocks">("gallery");
   const router = useRouter();
-  const [draft, setDraft] = useState({ title: "", body: "", suburb: "", tag: "", excerpt: "" });
+  const [draft, setDraft] = useState(EMPTY_DRAFT);
+  const [editing, setEditing] = useState<Content | null>(null);
   const [busy, setBusy] = useState(false);
 
   const list = items.filter((i) => i.type === tab);
   const blocks = items.filter((i) => i.type === "block");
   const inp: React.CSSProperties = { fontSize: 14, padding: "9px 12px", border: "1px solid var(--color-line)", borderRadius: 9, width: "100%" };
 
-  async function add() {
+  function switchTab(t: "gallery" | "post" | "blocks") {
+    setTab(t);
+    setEditing(null);
+    setDraft(EMPTY_DRAFT);
+  }
+
+  function startEdit(it: Content) {
+    setEditing(it);
+    setDraft({
+      title: it.title,
+      body: it.body,
+      suburb: it.meta.suburb ?? "",
+      tag: it.meta.tag ?? "",
+      excerpt: it.meta.excerpt ?? "",
+    });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setDraft(EMPTY_DRAFT);
+  }
+
+  async function save() {
     if (!draft.title.trim()) return;
     setBusy(true);
-    await fetch("/api/content", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: tab,
-        title: draft.title,
-        body: draft.body,
-        meta: tab === "gallery" ? { suburb: draft.suburb, tag: draft.tag || "Install" } : { excerpt: draft.excerpt },
-      }),
-    });
-    setDraft({ title: "", body: "", suburb: "", tag: "", excerpt: "" });
+    const meta = tab === "gallery"
+      ? { suburb: draft.suburb, tag: draft.tag || "Install" }
+      : { excerpt: draft.excerpt };
+    if (editing) {
+      await fetch("/api/content", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editing.id, title: draft.title, body: draft.body, meta }),
+      });
+    } else {
+      await fetch("/api/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: tab, title: draft.title, body: draft.body, meta }),
+      });
+    }
+    setDraft(EMPTY_DRAFT);
+    setEditing(null);
     setBusy(false);
     router.refresh();
   }
@@ -82,7 +114,7 @@ export default function ContentManager({ items }: { items: Content[] }) {
     <div style={{ maxWidth: 960 }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {(["gallery", "post", "blocks"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: "8px 18px", borderRadius: 9, border: "1px solid var(--color-line)", background: tab === t ? "var(--color-navy)" : "#fff", color: tab === t ? "#fff" : "var(--color-navy)", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, cursor: "pointer", textTransform: "uppercase", letterSpacing: ".04em" }}>
+          <button key={t} onClick={() => switchTab(t)} style={{ padding: "8px 18px", borderRadius: 9, border: "1px solid var(--color-line)", background: tab === t ? "var(--color-navy)" : "#fff", color: tab === t ? "#fff" : "var(--color-navy)", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, cursor: "pointer", textTransform: "uppercase", letterSpacing: ".04em" }}>
             {t === "gallery" ? "Gallery" : t === "post" ? "Blog / Guides" : "Page Blocks"}
           </button>
         ))}
@@ -108,8 +140,10 @@ export default function ContentManager({ items }: { items: Content[] }) {
       {/* ── GALLERY / POSTS ── */}
       {tab !== "blocks" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="es-2col">
-          <div className="card" style={{ padding: 22, alignSelf: "start" }}>
-            <h3 className="display" style={{ fontSize: 15, color: "var(--color-navy)", marginBottom: 12 }}>Add {tab === "gallery" ? "gallery item" : "guide"}</h3>
+          <div className="card" style={{ padding: 22, alignSelf: "start", borderTop: editing ? "3px solid var(--color-brass)" : undefined }}>
+            <h3 className="display" style={{ fontSize: 15, color: "var(--color-navy)", marginBottom: 12 }}>
+              {editing ? `Edit: ${editing.title}` : `Add ${tab === "gallery" ? "gallery item" : "guide"}`}
+            </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <input placeholder="Title" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} style={inp} />
               {tab === "gallery" ? (
@@ -124,7 +158,12 @@ export default function ContentManager({ items }: { items: Content[] }) {
                   <textarea placeholder="Body (blank line between paragraphs)" rows={5} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} style={{ ...inp, resize: "vertical" }} />
                 </>
               )}
-              <button className="btn-brass" onClick={add} disabled={busy} style={{ alignSelf: "flex-start" }}>{busy ? "Adding…" : "Add"}</button>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn-brass" onClick={save} disabled={busy}>
+                  {busy ? "Saving…" : editing ? "Save changes" : "Add"}
+                </button>
+                {editing && <button className="btn-ghost" onClick={cancelEdit}>Cancel</button>}
+              </div>
             </div>
           </div>
 
@@ -142,6 +181,7 @@ export default function ContentManager({ items }: { items: Content[] }) {
                   <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: it.published ? "var(--color-signal)" : "var(--color-steel)", background: it.published ? "#eef4f0" : "var(--color-mist)", padding: "3px 8px", borderRadius: 12, whiteSpace: "nowrap" }}>{it.published ? "Live" : "Draft"}</span>
                 </div>
                 <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                  <button onClick={() => startEdit(it)} style={{ ...linkBtn, color: "var(--color-warn)", fontWeight: 700 }}>Edit</button>
                   <button onClick={() => toggle(it)} style={linkBtn}>{it.published ? "Unpublish" : "Publish"}</button>
                   <button onClick={() => remove(it)} style={{ ...linkBtn, color: "#a23c34" }}>Delete</button>
                 </div>

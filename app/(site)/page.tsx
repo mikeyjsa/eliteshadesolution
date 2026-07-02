@@ -2,8 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { UVDial } from "@/components/Illustrations";
 import { Counter, FAQ } from "@/components/Interactive";
+import { MiniEstimator, CompareSlider, ProcessTimeline, StickyQuoteBar } from "@/components/HomeInteractive";
 import { PhotoFrame, SITE_PHOTOS } from "@/components/SitePhotos";
 import { getDB } from "@/lib/db";
+import { ratesFromPricing } from "@/lib/quote-engine";
 import { zar } from "@/lib/format";
 import { readBlockMeta, readBlockItems } from "@/lib/page-blocks";
 import { absUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
@@ -45,6 +47,7 @@ export const metadata: Metadata = {
 export default async function Home() {
   const db = await getDB();
   const gallery = db.content.filter((c) => c.type === "gallery" && c.published).slice(0, 4);
+  const rates = ratesFromPricing(db.pricing);
 
   // CMS-driven blocks — use the module-level helpers to avoid <T> JSX ambiguity
   const heroMeta = readBlockMeta(db, "home_hero");
@@ -179,6 +182,23 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ===== MINI ESTIMATOR (interactive) ===== */}
+      <section style={{ background: "var(--color-mist)", padding: "70px 28px" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+          <div className="reveal" style={{ textAlign: "center", maxWidth: 640, margin: "0 auto 34px" }}>
+            <span className="eyebrow">No forms, no waiting</span>
+            <h2 className="display" style={{ fontSize: 32, color: "var(--color-navy)", margin: "10px 0" }}>Play with a real price right now</h2>
+            <p style={{ color: "var(--color-steel)", fontSize: 16 }}>
+              The same engine that powers our full quote tool — drag the sliders and
+              watch the sail and the price respond.
+            </p>
+          </div>
+          <div className="reveal">
+            <MiniEstimator rates={rates} />
+          </div>
+        </div>
+      </section>
+
       {/* ===== ENGINEERING / ANATOMY ===== */}
       <section style={{ background: "var(--color-mist)", padding: "70px 28px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center" }} className="es-2col">
@@ -228,20 +248,8 @@ export default async function Home() {
       <section style={{ background: "#fff", padding: "64px 28px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h2 className="display reveal" style={{ fontSize: 28, color: "var(--color-navy)", marginBottom: 28 }}>From estimate to shade in five steps</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 0 }} className="es-steps">
-            {[
-              ["01", "Instant estimate", "Enter your area — see a real range"],
-              ["02", "We confirm", "A quick call or free site check"],
-              ["03", "Firm quote", "Locked price, branded invoice"],
-              ["04", "Pay deposit", "50% via PayFast secures your date"],
-              ["05", "Installed", "Engineered, tensioned, guaranteed"],
-            ].map(([n, t, d], i) => (
-              <div key={n} className="reveal" style={{ background: "#fff", borderTop: "3px solid var(--color-brass)", borderRight: i < 4 ? "1px solid var(--color-line)" : "none", padding: "18px 16px", transitionDelay: `${i * 60}ms` }}>
-                <div className="eyebrow" style={{ color: "var(--color-brass)" }}>{n}</div>
-                <h4 className="display" style={{ fontSize: 15, color: "var(--color-navy)", margin: "6px 0 4px" }}>{t}</h4>
-                <p style={{ fontSize: 12.5, color: "var(--color-steel)", margin: 0 }}>{d}</p>
-              </div>
-            ))}
+          <div className="reveal">
+            <ProcessTimeline />
           </div>
         </div>
       </section>
@@ -256,6 +264,23 @@ export default async function Home() {
           <PhotoFrame photo={SITE_PHOTOS.terracePatio} sizes="(max-width: 820px) 100vw, 44vw" style={{ minHeight: 360 }} />
           <PhotoFrame photo={SITE_PHOTOS.courtyard} sizes="(max-width: 820px) 100vw, 28vw" style={{ minHeight: 360 }} />
           <PhotoFrame photo={SITE_PHOTOS.garden} sizes="(max-width: 820px) 100vw, 28vw" style={{ minHeight: 360 }} />
+        </div>
+      </section>
+
+      {/* ===== SUN vs SHADE COMPARISON (draggable) ===== */}
+      <section style={{ background: "#fff", padding: "70px 28px" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+          <div className="reveal" style={{ textAlign: "center", maxWidth: 640, margin: "0 auto 30px" }}>
+            <span className="eyebrow">Feel the difference</span>
+            <h2 className="display" style={{ fontSize: 32, color: "var(--color-navy)", margin: "10px 0" }}>Drag to see what 90% UV block looks like</h2>
+            <p style={{ color: "var(--color-steel)", fontSize: 16 }}>
+              Kalahari knitted HDPE takes the sting out of the Cape sun while
+              letting hot air escape. Slide the handle across the photo.
+            </p>
+          </div>
+          <div className="reveal">
+            <CompareSlider />
+          </div>
         </div>
       </section>
 
@@ -355,6 +380,9 @@ export default async function Home() {
           <Link href="/quote" className="btn-brass" style={{ fontSize: 16 }}>Get my instant estimate →</Link>
         </div>
       </section>
+
+      {/* ===== STICKY QUOTE BAR ===== */}
+      <StickyQuoteBar />
 
       <style>{`
         @media (max-width: 900px){ .es-hero-grid{ grid-template-columns: 1fr !important; } .es-2col{ grid-template-columns: 1fr !important; } }

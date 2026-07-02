@@ -143,9 +143,9 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
         <div
           style={{
             background: result.exceeded ? "rgba(162,60,52,.18)" : "var(--color-brass-soft)",
-            color: result.exceeded ? "#ffb4ac" : "#6b5524",
-            border: `1px solid ${result.exceeded ? "rgba(240,205,202,.4)" : "#e7d9b3"}`,
-            fontSize: 12.5, padding: "10px 13px", borderRadius: 9, marginBottom: 14, lineHeight: 1.5, fontWeight: 600,
+            color: result.exceeded ? "#ffcac4" : "var(--color-navy-deep)",
+            border: `1px solid ${result.exceeded ? "rgba(240,205,202,.4)" : "var(--color-brass)"}`,
+            fontSize: 13.5, padding: "11px 14px", borderRadius: 9, marginBottom: 14, lineHeight: 1.55, fontWeight: 600,
           }}
           id="q_match"
         >

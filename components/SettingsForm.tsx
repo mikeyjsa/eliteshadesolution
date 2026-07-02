@@ -72,6 +72,19 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               <input style={inp} value={s.instagram_url} onChange={(e) => set("instagram_url", e.target.value)} placeholder="https://instagram.com/yourprofile" />
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
+              <label style={lab}>EFT bank details (shown on the pay page and deposit invoice email)</label>
+              <textarea
+                style={{ ...inp, resize: "vertical", fontFamily: "inherit" }}
+                rows={4}
+                value={s.eft_details ?? ""}
+                onChange={(e) => set("eft_details", e.target.value)}
+                placeholder={"Bank: FNB\nAccount name: Elite Shade Solutions\nAccount number: 630 123 4567\nBranch code: 250 655"}
+              />
+              <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
+                One detail per line. Clients paying by EFT see these plus their invoice number as reference.
+              </p>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
               <label style={lab}>Google Analytics Measurement ID</label>
               <input style={inp} value={s.ga_measurement_id} onChange={(e) => set("ga_measurement_id", e.target.value)} placeholder="G-XXXXXXXXXX (leave blank to disable)" />
               <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>

@@ -8,3 +8,10 @@ export const SITE_URL =
 export function absUrl(path = "/") {
   return new URL(path, SITE_URL).toString();
 }
+
+export const DEFAULT_EFT_DETAILS =
+  "Bank: FNB\nAccount name: Elite Shade Solutions\nAccount number: 630 123 4567\nBranch code: 250 655";
+
+export function eftDetails(settings: { eft_details?: string }): string {
+  return settings.eft_details?.trim() || DEFAULT_EFT_DETAILS;
+}

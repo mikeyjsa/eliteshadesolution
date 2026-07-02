@@ -8,8 +8,13 @@ export function render(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
 
+export interface EmailCta {
+  label: string;
+  url: string;
+}
+
 // Branded HTML email template — table-based for email client compat.
-export function buildHtml(subject: string, body: string, fromName = "Elite Shade Solutions"): string {
+export function buildHtml(subject: string, body: string, fromName = "Elite Shade Solutions", cta?: EmailCta): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,6 +50,16 @@ export function buildHtml(subject: string, body: string, fromName = "Elite Shade
             ? `<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#22303c;">${line}</p>`
             : "<br/>"
           ).join("")}
+          ${cta ? `
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 4px;">
+            <tr>
+              <td style="background:#c9a24b;border-radius:10px;">
+                <a href="${cta.url}" target="_blank" style="display:inline-block;padding:14px 30px;font-size:15px;font-weight:800;color:#1c2733;text-decoration:none;letter-spacing:0.02em;">${cta.label} →</a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:10px 0 0;font-size:12px;color:#5b6b7a;">Or copy this link into your browser:<br/><a href="${cta.url}" style="color:#c9a24b;word-break:break-all;">${cta.url}</a></p>
+          ` : ""}
         </td>
       </tr>
 
@@ -86,12 +101,12 @@ export function buildHtml(subject: string, body: string, fromName = "Elite Shade
 </html>`;
 }
 
-export async function sendEmail(to: string, subject: string, body: string): Promise<EmailLog> {
+export async function sendEmail(to: string, subject: string, body: string, cta?: EmailCta): Promise<EmailLog> {
   const db = await getDB();
   const key = db.settings.resend_api_key?.trim();
   const from = db.settings.email_from || "quotes@eliteshadesolutions.co.za";
   const fromName = db.settings.company_name || "Elite Shade Solutions";
-  const html = buildHtml(subject, body, fromName);
+  const html = buildHtml(subject, body, fromName, cta);
 
   let channel: EmailLog["channel"] = "outbox";
   let status: EmailLog["status"] = "queued";

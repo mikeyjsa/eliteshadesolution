@@ -60,7 +60,16 @@ export default function QuoteDetail({
   }
 
   async function confirmPrice() {
-    await patch({ final_line_items: items, status: quote.status === "new" || quote.status === "following_up" ? "confirmed" : quote.status }, "confirm");
+    // Locking the price also emails the client their quote with a
+    // view/download/accept link.
+    await patch({
+      final_line_items: items,
+      status: quote.status === "new" || quote.status === "following_up" ? "confirmed" : quote.status,
+      send_quote_email: true,
+    }, "confirm");
+  }
+  async function resendQuoteEmail() {
+    await patch({ send_quote_email: true }, "resend");
   }
   async function genInvoice(type: "deposit" | "balance") {
     setBusy(type);
@@ -224,9 +233,28 @@ export default function QuoteDetail({
             <span className="display tnum" style={{ fontSize: 20, color: "var(--color-navy)" }}>{zar(total)}</span>
           </div>
           <button className="btn-brass" onClick={confirmPrice} disabled={scheduleLocked || busy === "confirm"} style={{ width: "100%" }}>
-            {busy === "confirm" ? "Saving…" : locked ? "Update firm price" : "Confirm firm price"}
+            {busy === "confirm" ? "Saving & emailing…" : locked ? "Update price & re-email quote" : "Confirm price & email quote"}
           </button>
           {locked && <p style={{ fontSize: 12.5, color: "var(--color-signal)", marginTop: 8 }}>Locked: <b className="tnum">{zar(quote.final_total!)}</b> · deposit {zar(depositAmt)}</p>}
+          {locked && (
+            <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--color-mist)", borderRadius: 9 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--color-steel)", marginBottom: 6 }}>
+                Client quote link {quote.accepted_at && <span style={{ color: "var(--color-signal)" }}>· accepted {new Date(quote.accepted_at).toLocaleDateString("en-ZA")}</span>}
+              </div>
+              {quote.public_token ? (
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <a href={`/q/${quote.public_token}`} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: "var(--color-warn)", fontWeight: 600, wordBreak: "break-all", flex: 1 }}>
+                    /q/{quote.public_token.slice(0, 12)}…
+                  </a>
+                  <button className="btn-ghost" style={{ padding: "4px 10px", fontSize: 11.5, whiteSpace: "nowrap" }} onClick={resendQuoteEmail} disabled={busy === "resend"}>
+                    {busy === "resend" ? "Sending…" : "Resend email"}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ fontSize: 12.5, color: "var(--color-steel)" }}>Generated when you confirm the price.</div>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={{ ...card, opacity: locked ? 1 : 0.5, pointerEvents: locked ? "auto" : "none" }}>

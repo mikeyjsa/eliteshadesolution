@@ -26,6 +26,16 @@
   --shadow-card: 0 2px 8px rgba(28, 39, 51, 0.05);
 }
 
+/* Tailwind v4 tree-shakes @theme tokens that never appear in a compiled CSS
+   rule. These four are consumed only from inline JSX styles, so pin them at
+   :root or they resolve to nothing in the browser. */
+:root {
+  --color-steel: #5b6b7a;
+  --color-brass-soft: #f3ead4;
+  --color-signal: #3f8f5f;
+  --color-warn: #b5742b;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -263,6 +273,28 @@ body {
 .stat-num.counting {
   animation: count-up-flash 0.4s ease;
 }
+
+/* ── Range sliders (mini estimator) ──────────────────────────────────────── */
+.es-range {
+  width: 100%;
+  accent-color: var(--color-brass);
+  cursor: grab;
+}
+.es-range:active { cursor: grabbing; }
+
+/* ── Estimator price flash on change ─────────────────────────────────────── */
+@keyframes es-price-pop {
+  0%   { color: var(--color-brass); transform: translateY(2px); }
+  100% { color: #fff; transform: translateY(0); }
+}
+.es-price-flash { animation: es-price-pop 0.45s ease; }
+
+/* ── Sticky quote bar ────────────────────────────────────────────────────── */
+@keyframes es-bar-rise {
+  from { transform: translateY(110%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.es-sticky-bar { animation: es-bar-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* ── Admin shell (unchanged) ─────────────────────────────────────────────── */
 .admin-link {

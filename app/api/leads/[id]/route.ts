@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mutate, uid } from "@/lib/db";
+import { getDB, mutate, uid } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { ensureQuoteToken, sendQuoteEmail } from "@/lib/quote-flow";
 import { STAGES, type QuoteInputs, type QuoteLineItem, type QuoteStage } from "@/lib/types";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -86,5 +87,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   });
 
   if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ ok: true, quote: result });
+
+  // Email the client their confirmed quote with a view/download/accept link.
+  let quoteLink: string | null = null;
+  if (body.send_quote_email && result.final_total != null) {
+    const token = await ensureQuoteToken(id);
+    if (token) {
+      quoteLink = `${req.nextUrl.origin}/q/${token}`;
+      const fresh = (await getDB()).quotes.find((x) => x.id === id);
+      if (fresh) await sendQuoteEmail(fresh, req.nextUrl.origin);
+    }
+  }
+
+  return NextResponse.json({ ok: true, quote: result, quoteLink });
 }

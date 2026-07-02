@@ -76,6 +76,8 @@ export interface Quote {
   estimate_high: number;
   final_total: number | null;
   final_line_items: QuoteLineItem[] | null; // editable breakdown once confirmed
+  public_token?: string | null;  // unguessable token for the client quote link
+  accepted_at?: string | null;   // set when the client accepts online
   archived: boolean;
   exceeded: boolean;
   notes: string;
@@ -150,6 +152,7 @@ export interface Settings {
   admin_password: string;   // legacy fallback; per-user auth takes priority
   resend_api_key: string;
   ga_measurement_id: string;
+  eft_details?: string; // bank details shown on the EFT payment option (multiline)
   email_templates: Record<string, { subject: string; body: string }>;
 }
 

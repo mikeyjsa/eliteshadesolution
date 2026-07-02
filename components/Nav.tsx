@@ -28,9 +28,9 @@ export default function Nav() {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        background: scrolled ? "rgba(255,255,255,0.92)" : "transparent",
-        backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
-        borderBottom: scrolled ? "1px solid var(--color-line)" : "1px solid transparent",
+        background: scrolled || open ? "rgba(255,255,255,0.92)" : "transparent",
+        backdropFilter: scrolled || open ? "saturate(180%) blur(12px)" : "none",
+        borderBottom: scrolled || open ? "1px solid var(--color-line)" : "1px solid transparent",
         transition: "all .25s ease",
       }}
     >
@@ -45,7 +45,15 @@ export default function Nav() {
         }}
       >
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
-          <Image src="/logo.png" alt="Elite Shade Solutions" width={210} height={140} style={{ height: 74, width: "auto" }} priority className="es-logo" />
+          <Image
+            src="/logo.png"
+            alt="Elite Shade Solutions"
+            width={210}
+            height={140}
+            style={{ height: 74, width: "auto" }}
+            priority
+            className="es-logo"
+          />
         </Link>
         <nav className="es-desktop-nav" style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
           {LINKS.map((l) => (
