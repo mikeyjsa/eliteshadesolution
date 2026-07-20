@@ -304,9 +304,13 @@ export function seedDB(): DB {
       slug: "footer_info",
       title: "Footer — Company details",
       meta: {
+        brand_name: "Elite Shade",
+        tagline: "Engineered Shade. Exceptional Spaces.",
         blurb: "Premium Kalahari shade sails, professionally installed in Cape Town with engineered fixings and transparent quoting.",
         location: "Cape Town, Western Cape, South Africa",
         legal_note: "Prices are indicative estimates. Final pricing is confirmed after a free site survey.",
+        facebook_url: "",
+        instagram_url: "",
       },
     },
   ];

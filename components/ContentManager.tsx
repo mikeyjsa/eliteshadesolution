@@ -30,7 +30,7 @@ const BLOCK_FIELDS: Record<string, { label: string; fields: { key: string; label
     fields: [{ key: "items", label: 'FAQ JSON array: [{"q":"...","a":"..."}]', type: "json" }],
   },
   contact_info: {
-    label: "Contact — Details",
+    label: "Contact + Footer — Contact details",
     fields: [
       { key: "sales_name", label: "Sales contact name", type: "text" },
       { key: "sales_role", label: "Sales contact role", type: "text" },
@@ -42,6 +42,18 @@ const BLOCK_FIELDS: Record<string, { label: string; fields: { key: string; label
       { key: "sales_email", label: "Shared sales email", type: "text" },
       { key: "info_email", label: "Shared info email", type: "text" },
       { key: "areas", label: "Service areas", type: "textarea" },
+    ],
+  },
+  footer_info: {
+    label: "Footer — Company details",
+    fields: [
+      { key: "brand_name", label: "Footer brand name", type: "text" },
+      { key: "tagline", label: "Footer tagline", type: "text" },
+      { key: "blurb", label: "Footer intro text", type: "textarea" },
+      { key: "location", label: "Footer location line", type: "text" },
+      { key: "legal_note", label: "Footer legal note", type: "textarea" },
+      { key: "facebook_url", label: "Facebook page URL", type: "text" },
+      { key: "instagram_url", label: "Instagram profile URL", type: "text" },
     ],
   },
 };

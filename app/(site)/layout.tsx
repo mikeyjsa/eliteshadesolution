@@ -12,8 +12,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const db = await getDB();
   const s = db.settings;
   const gaId = s.ga_measurement_id || "";
-  const fbUrl = s.facebook_url || "";
-  const igUrl = s.instagram_url || "";
+  const contact = db.content.find((item) => item.type === "block" && item.slug === "contact_info");
+  const footer = db.content.find((item) => item.type === "block" && item.slug === "footer_info");
+  const fbUrl = footer?.meta.facebook_url || "";
+  const igUrl = footer?.meta.instagram_url || "";
 
   return (
     <>
@@ -24,14 +26,19 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <Footer
         facebookUrl={fbUrl}
         instagramUrl={igUrl}
-        salesName={s.sales_name}
-        salesRole={s.sales_role}
-        salesPhone={s.sales_phone}
-        marketingName={s.marketing_name}
-        marketingRole={s.marketing_role}
-        marketingPhone={s.marketing_phone}
-        salesEmail={s.sales_email}
-        infoEmail={s.info_email}
+        brandName={footer?.meta.brand_name}
+        tagline={footer?.meta.tagline}
+        blurb={footer?.meta.blurb}
+        location={footer?.meta.location}
+        legalNote={footer?.meta.legal_note}
+        salesName={contact?.meta.sales_name}
+        salesRole={contact?.meta.sales_role}
+        salesPhone={contact?.meta.sales_phone}
+        marketingName={contact?.meta.marketing_name}
+        marketingRole={contact?.meta.marketing_role}
+        marketingPhone={contact?.meta.marketing_phone}
+        salesEmail={contact?.meta.sales_email}
+        infoEmail={contact?.meta.info_email}
       />
       <Reveal />
       <AnimationLayer />

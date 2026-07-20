@@ -21,6 +21,11 @@ function InstagramIcon() {
 export default function Footer({
   facebookUrl = "",
   instagramUrl = "",
+  brandName = "Elite Shade",
+  tagline = "Engineered Shade. Exceptional Spaces.",
+  blurb = "Premium Kalahari shade sails, engineered and installed for the Western Cape. Real prices online — no callback required.",
+  location = "Cape Town, Western Cape",
+  legalNote = "Prices shown are indicative estimates; final pricing confirmed after a free site survey.",
   salesName = "Jean-Pierre Miller",
   salesRole = "Sales",
   salesPhone = "067 618 2422",
@@ -32,6 +37,11 @@ export default function Footer({
 }: {
   facebookUrl?: string;
   instagramUrl?: string;
+  brandName?: string;
+  tagline?: string;
+  blurb?: string;
+  location?: string;
+  legalNote?: string;
   salesName?: string;
   salesRole?: string;
   salesPhone?: string;
@@ -48,14 +58,13 @@ export default function Footer({
       <div style={{ maxWidth: 1240, margin: "0 auto", display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 40 }} className="es-foot-grid">
         <div>
           <div className="display" style={{ color: "#fff", fontSize: 22, letterSpacing: ".06em", textTransform: "uppercase" }}>
-            Elite Shade
+            {brandName}
           </div>
           <p className="eyebrow" style={{ color: "var(--color-brass)", marginTop: 6 }}>
-            Engineered Shade. Exceptional Spaces.
+            {tagline}
           </p>
           <p style={{ fontSize: 13.5, maxWidth: 320, marginTop: 14, lineHeight: 1.7 }}>
-            Premium Kalahari shade sails, engineered and installed for the
-            Western Cape. Real prices online — no callback required.
+            {blurb}
           </p>
           {hasSocial && (
             <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
@@ -89,7 +98,7 @@ export default function Footer({
         <div>
           <h4 style={{ color: "#fff", fontSize: 12, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: 14 }}>Reach us</h4>
           <p style={{ fontSize: 13.5, lineHeight: 1.9 }}>
-            Cape Town, Western Cape<br />
+            {location}<br />
             {salesName} · {salesRole} · {salesPhone}<br />
             {marketingName} · {marketingRole} · {marketingPhone}<br />
             {salesEmail}<br />
@@ -105,7 +114,7 @@ export default function Footer({
       </div>
       <div className="guyline" style={{ maxWidth: 1240, margin: "36px auto 0" }} />
       <p style={{ maxWidth: 1240, margin: "16px auto 0", fontSize: 12, color: "#6f7f8c" }}>
-        © {new Date().getFullYear()} Elite Shade Solutions · Cape Town. Prices shown are indicative estimates; final pricing confirmed after a free site survey.
+        © {new Date().getFullYear()} Elite Shade Solutions · {location}. {legalNote}
       </p>
       <style>{`
         @media (max-width: 760px){ .es-foot-grid{ grid-template-columns: 1fr !important; gap: 28px !important; } }

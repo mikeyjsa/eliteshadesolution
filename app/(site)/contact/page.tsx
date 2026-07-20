@@ -12,17 +12,18 @@ export const metadata = {
 export default async function Contact() {
   const db = await getDB();
   const s = db.settings;
+  const block = db.content.find((item) => item.type === "block" && item.slug === "contact_info");
   const info = {
-    sales_name: s.sales_name || "Jean-Pierre Miller",
-    sales_role: s.sales_role || "Sales",
-    sales_phone: s.sales_phone || "067 618 2422",
-    sales_whatsapp: s.sales_whatsapp || s.whatsapp || "27676182422",
-    marketing_name: s.marketing_name || "Michael Theron",
-    marketing_role: s.marketing_role || "Marketing / Online sales",
-    marketing_phone: s.marketing_phone || "060 949 1197",
-    sales_email: s.sales_email || s.email_from || "sales@eliteshadesolutions.co.za",
-    info_email: s.info_email || "info@eliteshadesolutions.co.za",
-    areas: "Southern & Northern Suburbs, Helderberg, Atlantic Seaboard, Winelands.",
+    sales_name: block?.meta.sales_name || s.sales_name || "Jean-Pierre Miller",
+    sales_role: block?.meta.sales_role || s.sales_role || "Sales",
+    sales_phone: block?.meta.sales_phone || s.sales_phone || "067 618 2422",
+    sales_whatsapp: block?.meta.sales_whatsapp || s.sales_whatsapp || s.whatsapp || "27676182422",
+    marketing_name: block?.meta.marketing_name || s.marketing_name || "Michael Theron",
+    marketing_role: block?.meta.marketing_role || s.marketing_role || "Marketing / Online sales",
+    marketing_phone: block?.meta.marketing_phone || s.marketing_phone || "060 949 1197",
+    sales_email: block?.meta.sales_email || s.sales_email || s.email_from || "sales@eliteshadesolutions.co.za",
+    info_email: block?.meta.info_email || s.info_email || "info@eliteshadesolutions.co.za",
+    areas: block?.meta.areas || "Southern & Northern Suburbs, Helderberg, Atlantic Seaboard, Winelands.",
   };
   return (
     <>

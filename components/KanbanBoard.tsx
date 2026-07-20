@@ -49,6 +49,16 @@ export default function KanbanBoard({ initial }: { initial: Card[] }) {
     await fetch(`/api/leads/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ archived: value }) });
     router.refresh();
   }
+  async function removeArchived(id: string) {
+    if (!confirm("Delete this archived lead permanently? This will remove linked invoices, activities, and installation records too.")) return;
+    setCards((cs) => cs.filter((c) => c.id !== id));
+    const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      router.refresh();
+      return;
+    }
+    router.refresh();
+  }
   async function archiveAllPaid() {
     if (!paidArchivable) return;
     setBusy(true);
@@ -152,6 +162,7 @@ export default function KanbanBoard({ initial }: { initial: Card[] }) {
                     <td className="tnum" style={{ padding: "10px 16px", textAlign: "right", fontWeight: 600 }}>{c.final != null ? zar(c.final) : "—"}</td>
                     <td style={{ padding: "10px 16px", textAlign: "right" }}>
                       <button onClick={() => setArchived(c.id, false)} style={{ background: "none", border: "none", color: "var(--color-brass)", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Restore</button>
+                      <button onClick={() => removeArchived(c.id)} style={{ background: "none", border: "none", color: "#a23c34", fontWeight: 700, fontSize: 12.5, cursor: "pointer", marginLeft: 14 }}>Delete</button>
                     </td>
                   </tr>
                 ))}

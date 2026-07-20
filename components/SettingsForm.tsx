@@ -69,21 +69,6 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               <label style={lab}>Company address (appears on invoices)</label>
               <input style={inp} value={s.company_address} onChange={(e) => set("company_address", e.target.value)} placeholder="Cape Town, Western Cape, South Africa" />
             </div>
-            <div>
-              <label style={lab}>Facebook page URL</label>
-              <input style={inp} value={s.facebook_url} onChange={(e) => set("facebook_url", e.target.value)} placeholder="https://facebook.com/yourpage" />
-            </div>
-            <div>
-              <label style={lab}>Instagram profile URL</label>
-              <input style={inp} value={s.instagram_url} onChange={(e) => set("instagram_url", e.target.value)} placeholder="https://instagram.com/yourprofile" />
-            </div>
-            <div><label style={lab}>Sales contact name</label><input style={inp} value={s.sales_name ?? ""} onChange={(e) => set("sales_name", e.target.value)} /></div>
-            <div><label style={lab}>Sales contact role</label><input style={inp} value={s.sales_role ?? ""} onChange={(e) => set("sales_role", e.target.value)} placeholder="Sales" /></div>
-            <div><label style={lab}>Sales contact phone</label><input style={inp} value={s.sales_phone ?? ""} onChange={(e) => set("sales_phone", e.target.value)} /></div>
-            <div><label style={lab}>Sales WhatsApp (E.164)</label><input style={inp} value={s.sales_whatsapp ?? ""} onChange={(e) => set("sales_whatsapp", e.target.value)} placeholder="27676182422" /></div>
-            <div><label style={lab}>Marketing contact name</label><input style={inp} value={s.marketing_name ?? ""} onChange={(e) => set("marketing_name", e.target.value)} /></div>
-            <div><label style={lab}>Marketing contact role</label><input style={inp} value={s.marketing_role ?? ""} onChange={(e) => set("marketing_role", e.target.value)} placeholder="Marketing / Online sales" /></div>
-            <div><label style={lab}>Marketing contact phone</label><input style={inp} value={s.marketing_phone ?? ""} onChange={(e) => set("marketing_phone", e.target.value)} /></div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={lab}>Customer payment mode</label>
               <select style={{ ...inp, maxWidth: 360 }} value={s.payment_mode || "payfast_and_eft"} onChange={(e) => set("payment_mode", e.target.value as Settings["payment_mode"])}>
@@ -121,6 +106,9 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
                 Stored in Settings so PayGate can be switched on later without another code update.
               </p>
+            </div>
+            <div style={{ gridColumn: "1 / -1", padding: "12px 14px", background: "var(--color-mist)", borderRadius: 10, fontSize: 12.5, color: "var(--color-steel)", lineHeight: 1.7 }}>
+              Footer branding, social links, footer contact details, and the footer legal line are now managed in <strong>Content → Page Blocks</strong> under <code>Contact + Footer — Contact details</code> and <code>Footer — Company details</code>.
             </div>
           </div>
         </div>

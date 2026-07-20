@@ -3,6 +3,9 @@ import { getDB, mutate, uid } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { ensureQuoteToken, sendQuoteEmail } from "@/lib/quote-flow";
 import { STAGES, type QuoteInputs, type QuoteLineItem, type QuoteStage } from "@/lib/types";
+import { promises as fs } from "fs";
+import path from "path";
+import { DATA_DIR } from "@/lib/storage-paths";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -100,4 +103,43 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   return NextResponse.json({ ok: true, quote: result, quoteLink });
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  const db = await getDB();
+  const quote = db.quotes.find((item) => item.id === id);
+  if (!quote) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!quote.archived) {
+    return NextResponse.json({ error: "Only archived leads can be deleted from the pipeline." }, { status: 400 });
+  }
+
+  const proofUrls = db.invoices
+    .filter((invoice) => invoice.quote_id === id)
+    .map((invoice) => invoice.proof_url)
+    .filter((url): url is string => Boolean(url));
+
+  await mutate((state) => {
+    const deletingQuote = state.quotes.find((item) => item.id === id);
+    if (!deletingQuote) return;
+
+    state.invoices = state.invoices.filter((invoice) => invoice.quote_id !== id);
+    state.installations = state.installations.filter((installation) => installation.quote_id !== id);
+    state.activities = state.activities.filter((activity) => activity.quote_id !== id);
+    state.quotes = state.quotes.filter((item) => item.id !== id);
+
+    const stillReferenced = state.quotes.some((item) => item.customer_id === deletingQuote.customer_id);
+    if (!stillReferenced) {
+      state.customers = state.customers.filter((customer) => customer.id !== deletingQuote.customer_id);
+    }
+  });
+
+  for (const url of proofUrls) {
+    const relative = url.replace(/^\/+/, "");
+    const absolute = path.join(DATA_DIR, relative.replace(/^uploads\//, "uploads/"));
+    await fs.unlink(absolute).catch(() => {});
+  }
+
+  return NextResponse.json({ ok: true });
 }
