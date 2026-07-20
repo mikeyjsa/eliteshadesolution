@@ -3,6 +3,7 @@ import { getDB, mutate, uid } from "@/lib/db";
 import { calcQuote, ratesFromPricing } from "@/lib/quote-engine";
 import { sendEmail, render } from "@/lib/email";
 import { zar } from "@/lib/format";
+import { notificationEmails } from "@/lib/site";
 import type { Customer, Quote, QuoteInputs } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -70,6 +71,14 @@ export async function POST(req: NextRequest) {
     tpl.subject,
     render(tpl.body, { name: contact.name, range: `${zar(r.low)} – ${zar(r.high)}`, colour })
   );
+
+  for (const inbox of notificationEmails(db.settings)) {
+    await sendEmail(
+      inbox,
+      `New website quote enquiry — ${contact.name}`,
+      `${contact.name} submitted a website quote enquiry.\n\nEstimate range: ${zar(r.low)} – ${zar(r.high)}\nNet: ${r.netLabel}\nColour: ${colour}\nSize: ${inputs.length}m × ${inputs.width}m\nPhone: ${contact.phone || "—"}\nEmail: ${contact.email}\nSuburb: ${contact.suburb || "—"}`
+    );
+  }
 
   return NextResponse.json({ ok: true, quoteId: quote.id });
 }

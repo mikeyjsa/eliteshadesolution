@@ -6,7 +6,7 @@ import { getDB, mutate, uid } from "./db";
 import { sendEmail } from "./email";
 import { zar } from "./format";
 import { quoteNumber } from "./pdf";
-import { eftDetails, gatewayEnabled, paymentOptionsSentence } from "./site";
+import { eftDetails, gatewayEnabled, notificationEmails, paymentOptionsSentence } from "./site";
 import type { Invoice, Quote } from "./types";
 
 // Generate (once) and return the unguessable public token for a quote.
@@ -48,6 +48,13 @@ export async function sendQuoteEmail(quote: Quote, origin: string): Promise<void
     label: "View & accept my quote",
     url,
   });
+  for (const inbox of notificationEmails(db.settings)) {
+    await sendEmail(
+      inbox,
+      `Quote ready — ${quoteNumber(quote)} for ${customer.name}`,
+      `Quote ${quoteNumber(quote)} has been confirmed and emailed to ${customer.email}.\n\nClient: ${customer.name}\nTotal: ${total}\nDeposit: ${deposit}\nView link: ${url}`
+    );
+  }
 
   await mutate((db2) => {
     db2.activities.unshift({
@@ -93,6 +100,13 @@ export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, or
     label: allowGateway ? `Pay ${zar(invoice.amount)} deposit securely` : `View payment instructions`,
     url: payUrl,
   });
+  for (const inbox of notificationEmails(db.settings)) {
+    await sendEmail(
+      inbox,
+      `Deposit invoice sent — ${invoice.number}`,
+      `Deposit invoice ${invoice.number} has been sent to ${customer.email}.\n\nClient: ${customer.name}\nAmount: ${zar(invoice.amount)}\nPayment mode: ${allowGateway ? "Gateway + EFT" : "EFT only"}\nPay page: ${payUrl}`
+    );
+  }
 
   await mutate((db2) => {
     db2.activities.unshift({

@@ -12,6 +12,24 @@ export function absUrl(path = "/") {
 export const DEFAULT_EFT_DETAILS =
   "Bank: FNB\nAccount name: Elite Shade Solutions\nAccount number: 630 123 4567\nBranch code: 250 655";
 
+export function cleanEmail(value?: string) {
+  return value?.trim().toLowerCase() || "";
+}
+
+export function notificationEmails(settings: {
+  info_email?: string;
+  notification_emails?: string;
+}) {
+  const list = [
+    cleanEmail(settings.info_email),
+    ...(settings.notification_emails || "")
+      .split(/[\n,;]/)
+      .map((item) => cleanEmail(item))
+      .filter(Boolean),
+  ];
+  return Array.from(new Set(list)).filter(Boolean);
+}
+
 export function eftDetails(settings: { eft_details?: string }): string {
   return settings.eft_details?.trim() || DEFAULT_EFT_DETAILS;
 }

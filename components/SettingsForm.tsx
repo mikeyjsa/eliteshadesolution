@@ -76,6 +76,13 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               <label style={lab}>Instagram profile URL</label>
               <input style={inp} value={s.instagram_url} onChange={(e) => set("instagram_url", e.target.value)} placeholder="https://instagram.com/yourprofile" />
             </div>
+            <div><label style={lab}>Sales contact name</label><input style={inp} value={s.sales_name ?? ""} onChange={(e) => set("sales_name", e.target.value)} /></div>
+            <div><label style={lab}>Sales contact role</label><input style={inp} value={s.sales_role ?? ""} onChange={(e) => set("sales_role", e.target.value)} placeholder="Sales" /></div>
+            <div><label style={lab}>Sales contact phone</label><input style={inp} value={s.sales_phone ?? ""} onChange={(e) => set("sales_phone", e.target.value)} /></div>
+            <div><label style={lab}>Sales WhatsApp (E.164)</label><input style={inp} value={s.sales_whatsapp ?? ""} onChange={(e) => set("sales_whatsapp", e.target.value)} placeholder="27676182422" /></div>
+            <div><label style={lab}>Marketing contact name</label><input style={inp} value={s.marketing_name ?? ""} onChange={(e) => set("marketing_name", e.target.value)} /></div>
+            <div><label style={lab}>Marketing contact role</label><input style={inp} value={s.marketing_role ?? ""} onChange={(e) => set("marketing_role", e.target.value)} placeholder="Marketing / Online sales" /></div>
+            <div><label style={lab}>Marketing contact phone</label><input style={inp} value={s.marketing_phone ?? ""} onChange={(e) => set("marketing_phone", e.target.value)} /></div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={lab}>Customer payment mode</label>
               <select style={{ ...inp, maxWidth: 360 }} value={s.payment_mode || "payfast_and_eft"} onChange={(e) => set("payment_mode", e.target.value as Settings["payment_mode"])}>
@@ -97,6 +104,21 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               />
               <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
                 One detail per line. Clients paying by EFT see these plus their invoice number as reference.
+              </p>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={lab}>PayGate details</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }} className="es-form-grid">
+                <input style={inp} value={s.paygate_merchant_id ?? ""} onChange={(e) => set("paygate_merchant_id", e.target.value)} placeholder="Merchant ID" />
+                <input style={inp} value={s.paygate_merchant_key ?? ""} onChange={(e) => set("paygate_merchant_key", e.target.value)} placeholder="Merchant key" />
+                <input style={inp} value={s.paygate_passphrase ?? ""} onChange={(e) => set("paygate_passphrase", e.target.value)} placeholder="Passphrase" />
+                <input style={inp} value={s.paygate_return_url ?? ""} onChange={(e) => set("paygate_return_url", e.target.value)} placeholder="Return URL" />
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <input style={inp} value={s.paygate_notify_url ?? ""} onChange={(e) => set("paygate_notify_url", e.target.value)} placeholder="Notify / callback URL" />
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
+                Stored in Settings so PayGate can be switched on later without another code update.
               </p>
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
@@ -160,8 +182,33 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
           <p style={{ fontSize: 12, color: "var(--color-steel)", marginTop: 0, marginBottom: 16 }}>Get a key at resend.com. Until one is set, every estimate/invoice email is saved to the Outbox tab instead of being sent — nothing is lost.</p>
             </>
           )}
-          <label style={lab}>From address</label>
-          <input style={{ ...inp, maxWidth: 360 }} value={s.email_from} onChange={(e) => set("email_from", e.target.value)} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }} className="es-form-grid">
+            <div>
+              <label style={lab}>From address</label>
+              <input style={inp} value={s.email_from} onChange={(e) => set("email_from", e.target.value)} />
+            </div>
+            <div>
+              <label style={lab}>Sales inbox</label>
+              <input style={inp} value={s.sales_email ?? ""} onChange={(e) => set("sales_email", e.target.value)} placeholder="sales@yourdomain.co.za" />
+            </div>
+            <div>
+              <label style={lab}>Info inbox</label>
+              <input style={inp} value={s.info_email ?? ""} onChange={(e) => set("info_email", e.target.value)} placeholder="info@yourdomain.co.za" />
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={lab}>Extra notification emails</label>
+              <textarea
+                style={{ ...inp, resize: "vertical", fontFamily: "inherit" }}
+                rows={3}
+                value={s.notification_emails ?? ""}
+                onChange={(e) => set("notification_emails", e.target.value)}
+                placeholder={"info@yourdomain.co.za\nowner@yourdomain.co.za"}
+              />
+              <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
+                One email per line or comma-separated. Website enquiries and quote notifications are sent to these addresses, with <code>info@</code> used by default.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

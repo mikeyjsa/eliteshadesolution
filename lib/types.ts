@@ -147,6 +147,9 @@ export interface Settings {
   deposit_pct: number;
   payment_mode?: "payfast_and_eft" | "eft_only";
   email_from: string;
+  sales_email?: string;
+  info_email?: string;
+  notification_emails?: string;
   email_provider?: "outbox" | "resend" | "smtp";
   smtp_host?: string;
   smtp_port?: number;
@@ -154,12 +157,24 @@ export interface Settings {
   smtp_user?: string;
   smtp_pass?: string;
   whatsapp: string;
+  sales_name?: string;
+  sales_role?: string;
+  sales_phone?: string;
+  sales_whatsapp?: string;
+  marketing_name?: string;
+  marketing_role?: string;
+  marketing_phone?: string;
   facebook_url: string;
   instagram_url: string;
   admin_password: string;   // legacy fallback; per-user auth takes priority
   resend_api_key: string;
   ga_measurement_id: string;
   eft_details?: string; // bank details shown on the EFT payment option (multiline)
+  paygate_merchant_id?: string;
+  paygate_merchant_key?: string;
+  paygate_passphrase?: string;
+  paygate_return_url?: string;
+  paygate_notify_url?: string;
   email_templates: Record<string, { subject: string; body: string }>;
 }
 

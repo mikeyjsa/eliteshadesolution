@@ -134,14 +134,13 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
   const key = db.settings.resend_api_key?.trim();
   const from = db.settings.email_from || "sales@eliteshadesolutions.co.za";
   const fromName = db.settings.company_name || "Elite Shade Solutions";
-  const block = db.content.find((c) => c.type === "block" && c.slug === "contact_info");
   const html = buildHtml(subject, body, fromName, from, {
-    salesName: block?.meta.sales_name || "Jean-Pierre Miller",
-    salesPhone: block?.meta.sales_phone || "067 618 2422",
-    marketingName: block?.meta.marketing_name || "Michael Theron",
-    marketingPhone: block?.meta.marketing_phone || "060 949 1197",
-    salesEmail: block?.meta.sales_email || "sales@eliteshadesolutions.co.za",
-    infoEmail: block?.meta.info_email || "info@eliteshadesolutions.co.za",
+    salesName: db.settings.sales_name || "Jean-Pierre Miller",
+    salesPhone: db.settings.sales_phone || "067 618 2422",
+    marketingName: db.settings.marketing_name || "Michael Theron",
+    marketingPhone: db.settings.marketing_phone || "060 949 1197",
+    salesEmail: db.settings.sales_email || from,
+    infoEmail: db.settings.info_email || "info@eliteshadesolutions.co.za",
   }, cta);
   const provider = db.settings.email_provider || (key ? "resend" : "outbox");
 

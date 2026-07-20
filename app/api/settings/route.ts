@@ -5,7 +5,28 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json();
   await mutate((db) => {
     const s = db.settings;
-    const str = ["company_name", "vat_number", "email_from", "whatsapp", "admin_password"] as const;
+    const str = [
+      "company_name",
+      "vat_number",
+      "email_from",
+      "sales_email",
+      "info_email",
+      "notification_emails",
+      "whatsapp",
+      "sales_name",
+      "sales_role",
+      "sales_phone",
+      "sales_whatsapp",
+      "marketing_name",
+      "marketing_role",
+      "marketing_phone",
+      "admin_password",
+      "paygate_merchant_id",
+      "paygate_merchant_key",
+      "paygate_passphrase",
+      "paygate_return_url",
+      "paygate_notify_url",
+    ] as const;
     for (const k of str) if (typeof body[k] === "string") s[k] = body[k];
     // resend key may be set OR cleared (empty string switches back to Outbox-only)
     if (typeof body.resend_api_key === "string") s.resend_api_key = body.resend_api_key.trim();

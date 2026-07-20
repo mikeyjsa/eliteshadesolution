@@ -18,7 +18,29 @@ function InstagramIcon() {
   );
 }
 
-export default function Footer({ facebookUrl = "", instagramUrl = "" }: { facebookUrl?: string; instagramUrl?: string }) {
+export default function Footer({
+  facebookUrl = "",
+  instagramUrl = "",
+  salesName = "Jean-Pierre Miller",
+  salesRole = "Sales",
+  salesPhone = "067 618 2422",
+  marketingName = "Michael Theron",
+  marketingRole = "Marketing / Online sales",
+  marketingPhone = "060 949 1197",
+  salesEmail = "sales@eliteshadesolutions.co.za",
+  infoEmail = "info@eliteshadesolutions.co.za",
+}: {
+  facebookUrl?: string;
+  instagramUrl?: string;
+  salesName?: string;
+  salesRole?: string;
+  salesPhone?: string;
+  marketingName?: string;
+  marketingRole?: string;
+  marketingPhone?: string;
+  salesEmail?: string;
+  infoEmail?: string;
+}) {
   const hasSocial = facebookUrl || instagramUrl;
 
   return (
@@ -68,10 +90,10 @@ export default function Footer({ facebookUrl = "", instagramUrl = "" }: { facebo
           <h4 style={{ color: "#fff", fontSize: 12, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: 14 }}>Reach us</h4>
           <p style={{ fontSize: 13.5, lineHeight: 1.9 }}>
             Cape Town, Western Cape<br />
-            Jean-Pierre Miller · Sales · 067 618 2422<br />
-            Michael Theron · Marketing / Online sales · 060 949 1197<br />
-            sales@eliteshadesolutions.co.za<br />
-            info@eliteshadesolutions.co.za
+            {salesName} · {salesRole} · {salesPhone}<br />
+            {marketingName} · {marketingRole} · {marketingPhone}<br />
+            {salesEmail}<br />
+            {infoEmail}
           </p>
           {hasSocial && (
             <div style={{ marginTop: 12 }}>

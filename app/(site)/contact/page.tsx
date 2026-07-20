@@ -1,7 +1,6 @@
 import ContactForm from "@/components/ContactForm";
 import { PageHero, PhotoFrame, SITE_PHOTOS } from "@/components/SitePhotos";
 import { getDB } from "@/lib/db";
-import { getBlock } from "@/lib/blocks";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -10,22 +9,21 @@ export const metadata = {
   alternates: { canonical: "/contact" },
 };
 
-const D_CONTACT = {
-  sales_name: "Jean-Pierre Miller",
-  sales_role: "Sales",
-  sales_phone: "067 618 2422",
-  sales_whatsapp: "27676182422",
-  marketing_name: "Michael Theron",
-  marketing_role: "Marketing / Online sales",
-  marketing_phone: "060 949 1197",
-  sales_email: "sales@eliteshadesolutions.co.za",
-  info_email: "info@eliteshadesolutions.co.za",
-  areas: "Southern & Northern Suburbs, Helderberg, Atlantic Seaboard, Winelands.",
-};
-
 export default async function Contact() {
   const db = await getDB();
-  const info = getBlock(db, "contact_info", D_CONTACT);
+  const s = db.settings;
+  const info = {
+    sales_name: s.sales_name || "Jean-Pierre Miller",
+    sales_role: s.sales_role || "Sales",
+    sales_phone: s.sales_phone || "067 618 2422",
+    sales_whatsapp: s.sales_whatsapp || s.whatsapp || "27676182422",
+    marketing_name: s.marketing_name || "Michael Theron",
+    marketing_role: s.marketing_role || "Marketing / Online sales",
+    marketing_phone: s.marketing_phone || "060 949 1197",
+    sales_email: s.sales_email || s.email_from || "sales@eliteshadesolutions.co.za",
+    info_email: s.info_email || "info@eliteshadesolutions.co.za",
+    areas: "Southern & Northern Suburbs, Helderberg, Atlantic Seaboard, Winelands.",
+  };
   return (
     <>
       <PageHero

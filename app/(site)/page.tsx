@@ -48,6 +48,7 @@ export default async function Home() {
   const db = await getDB();
   const gallery = db.content.filter((c) => c.type === "gallery" && c.published).slice(0, 4);
   const rates = ratesFromPricing(db.pricing);
+  const s = db.settings;
 
   // CMS-driven blocks — use the module-level helpers to avoid <T> JSX ambiguity
   const heroMeta = readBlockMeta(db, "home_hero");
@@ -64,7 +65,7 @@ export default async function Home() {
     name: SITE_NAME,
     description: SITE_DESCRIPTION,
     url: absUrl("/"),
-    email: "sales@eliteshadesolutions.co.za",
+    email: s.sales_email || s.email_from || "sales@eliteshadesolutions.co.za",
     areaServed: "Cape Town, Western Cape, South Africa",
     image: absUrl("/opengraph-image"),
     serviceType: "Shade sail supply and installation",
@@ -72,16 +73,16 @@ export default async function Home() {
       {
         "@type": "ContactPoint",
         contactType: "sales",
-        name: "Jean-Pierre Miller",
-        telephone: "+27 67 618 2422",
-        email: "sales@eliteshadesolutions.co.za",
+        name: s.sales_name || "Jean-Pierre Miller",
+        telephone: s.sales_phone ? `+27 ${s.sales_phone.replace(/\D/g, "").replace(/^0/, "")}` : "+27 67 618 2422",
+        email: s.sales_email || s.email_from || "sales@eliteshadesolutions.co.za",
       },
       {
         "@type": "ContactPoint",
         contactType: "marketing / online sales",
-        name: "Michael Theron",
-        telephone: "+27 60 949 1197",
-        email: "info@eliteshadesolutions.co.za",
+        name: s.marketing_name || "Michael Theron",
+        telephone: s.marketing_phone ? `+27 ${s.marketing_phone.replace(/\D/g, "").replace(/^0/, "")}` : "+27 60 949 1197",
+        email: s.info_email || "info@eliteshadesolutions.co.za",
       },
     ],
     makesOffer: {
