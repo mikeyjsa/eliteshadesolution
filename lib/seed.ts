@@ -58,6 +58,9 @@ const SETTINGS: Settings = {
   admin_password: "eliteshade",
   resend_api_key: "",
   ga_measurement_id: "",
+  ga_property_id: "",
+  ga_service_account_email: "",
+  ga_service_account_private_key: "",
   paygate_merchant_id: "",
   paygate_merchant_key: "",
   paygate_passphrase: "",
@@ -283,7 +286,7 @@ export function seedDB(): DB {
     },
     {
       slug: "contact_info",
-      title: "Contact — Details",
+      title: "Contact + Footer — Contact details",
       meta: {
         sales_name: "Jean-Pierre Miller",
         sales_role: "Sales",
@@ -295,6 +298,15 @@ export function seedDB(): DB {
         sales_email: "sales@eliteshadesolutions.co.za",
         info_email: "info@eliteshadesolutions.co.za",
         areas: "Southern Suburbs · Northern Suburbs · Helderberg · Atlantic Seaboard · Cape Winelands",
+      },
+    },
+    {
+      slug: "footer_info",
+      title: "Footer — Company details",
+      meta: {
+        blurb: "Premium Kalahari shade sails, professionally installed in Cape Town with engineered fixings and transparent quoting.",
+        location: "Cape Town, Western Cape, South Africa",
+        legal_note: "Prices are indicative estimates. Final pricing is confirmed after a free site survey.",
       },
     },
   ];
@@ -314,8 +326,8 @@ export function seedDB(): DB {
   );
 
   const users: AdminUser[] = [
-    { id: "usr_0001", name: "Owner", email: "owner@eliteshade.co.za", password: "eliteshade", role: "admin", active: true, created_at: isoDaysAgo(60) },
-    { id: "usr_0002", name: "Partner", email: "partner@eliteshade.co.za", password: "partner123", role: "manager", active: true, created_at: isoDaysAgo(30) },
+    { id: "usr_0001", name: "Owner", email: "owner@eliteshade.co.za", password: "eliteshade", role: "admin", active: true, receive_admin_notifications: true, created_at: isoDaysAgo(60) },
+    { id: "usr_0002", name: "Partner", email: "partner@eliteshade.co.za", password: "partner123", role: "manager", active: true, receive_admin_notifications: true, created_at: isoDaysAgo(30) },
   ];
 
   return {

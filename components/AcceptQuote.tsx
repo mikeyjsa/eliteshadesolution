@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zar } from "@/lib/format";
+import { gtagEvent } from "@/lib/gtag";
 
 // Client accept action on the public quote page. On success the server has
 // generated the deposit invoice + emailed it; we surface the pay link here too.
@@ -38,6 +39,7 @@ export default function AcceptQuote({
     const data = await res.json();
     setPayId(data.invoiceId);
     setJustAccepted(true);
+    gtagEvent("quote_accepted", { deposit_amount: depositAmount });
     router.refresh();
   }
 
@@ -52,7 +54,12 @@ export default function AcceptQuote({
           options ({paymentLabel}). Your install date is confirmed once the deposit reflects.
         </p>
         {payId && (
-          <a href={`/pay/${payId}`} className="btn-brass" style={{ display: "inline-block", fontSize: 14.5 }}>
+          <a
+            href={`/pay/${payId}`}
+            className="btn-brass"
+            style={{ display: "inline-block", fontSize: 14.5 }}
+            onClick={() => gtagEvent("deposit_payment_link_opened", { deposit_amount: depositAmount })}
+          >
             Pay {zar(depositAmount)} deposit now →
           </a>
         )}

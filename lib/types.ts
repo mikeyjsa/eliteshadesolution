@@ -26,6 +26,7 @@ export interface AdminUser {
   password: string; // plain-text for scaffold; swap bcrypt in production
   role: UserRole;
   active: boolean;
+  receive_admin_notifications: boolean;
   created_at: string;
 }
 
@@ -169,6 +170,9 @@ export interface Settings {
   admin_password: string;   // legacy fallback; per-user auth takes priority
   resend_api_key: string;
   ga_measurement_id: string;
+  ga_property_id?: string;
+  ga_service_account_email?: string;
+  ga_service_account_private_key?: string;
   eft_details?: string; // bank details shown on the EFT payment option (multiline)
   paygate_merchant_id?: string;
   paygate_merchant_key?: string;

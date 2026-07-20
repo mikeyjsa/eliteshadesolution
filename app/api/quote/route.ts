@@ -3,7 +3,7 @@ import { getDB, mutate, uid } from "@/lib/db";
 import { calcQuote, ratesFromPricing } from "@/lib/quote-engine";
 import { sendEmail, render } from "@/lib/email";
 import { zar } from "@/lib/format";
-import { notificationEmails } from "@/lib/site";
+import { adminNotificationEmails } from "@/lib/site";
 import type { Customer, Quote, QuoteInputs } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   const db = await getDB();
   const rates = ratesFromPricing(db.pricing);
   const r = calcQuote(inputs, rates);
+  const adminInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
 
   const now = new Date().toISOString();
   const customer: Customer = {
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
     render(tpl.body, { name: contact.name, range: `${zar(r.low)} – ${zar(r.high)}`, colour })
   );
 
-  for (const inbox of notificationEmails(db.settings)) {
+  for (const inbox of adminInboxes) {
     await sendEmail(
       inbox,
       `New website quote enquiry — ${contact.name}`,

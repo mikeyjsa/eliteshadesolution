@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, mutate, uid } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { notificationEmails } from "@/lib/site";
+import { adminNotificationEmails, absUrl } from "@/lib/site";
 import type { Customer, Quote } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   const f = await req.json();
   if (!f?.name || !f?.email) return NextResponse.json({ error: "Required" }, { status: 400 });
   const db = await getDB();
-  const teamInboxes = notificationEmails(db.settings);
+  const teamInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
 
   const now = new Date().toISOString();
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     await sendEmail(
       inbox,
       `New contact form enquiry — ${f.name}`,
-      `${f.name} submitted a contact form and has been added to the CRM pipeline.\n\nPhone: ${f.phone || "—"}\nEmail: ${f.email}\nSuburb: ${f.suburb || "—"}\n\nMessage:\n${f.message || "(no message)"}\n\nView in CRM: http://localhost:4700/admin/leads`
+      `${f.name} submitted a contact form and has been added to the CRM pipeline.\n\nPhone: ${f.phone || "—"}\nEmail: ${f.email}\nSuburb: ${f.suburb || "—"}\n\nMessage:\n${f.message || "(no message)"}\n\nView in CRM: ${absUrl("/admin/leads")}`
     );
   }
 

@@ -6,7 +6,7 @@ import { getDB, mutate, uid } from "./db";
 import { sendEmail } from "./email";
 import { zar } from "./format";
 import { quoteNumber } from "./pdf";
-import { eftDetails, gatewayEnabled, notificationEmails, paymentOptionsSentence } from "./site";
+import { absUrl, eftDetails, gatewayEnabled, adminNotificationEmails, paymentOptionsSentence } from "./site";
 import type { Invoice, Quote } from "./types";
 
 // Generate (once) and return the unguessable public token for a quote.
@@ -33,6 +33,7 @@ export async function sendQuoteEmail(quote: Quote, origin: string): Promise<void
   const total = zar(quote.final_total);
   const deposit = zar(Math.round(quote.final_total * db.settings.deposit_pct / 100));
   const paymentSentence = paymentOptionsSentence(db.settings);
+  const adminInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
 
   const body = [
     `Hi ${customer.name},`,
@@ -48,11 +49,11 @@ export async function sendQuoteEmail(quote: Quote, origin: string): Promise<void
     label: "View & accept my quote",
     url,
   });
-  for (const inbox of notificationEmails(db.settings)) {
+  for (const inbox of adminInboxes) {
     await sendEmail(
       inbox,
       `Quote ready — ${quoteNumber(quote)} for ${customer.name}`,
-      `Quote ${quoteNumber(quote)} has been confirmed and emailed to ${customer.email}.\n\nClient: ${customer.name}\nTotal: ${total}\nDeposit: ${deposit}\nView link: ${url}`
+      `Quote ${quoteNumber(quote)} has been confirmed and emailed to ${customer.email}.\n\nClient: ${customer.name}\nTotal: ${total}\nDeposit: ${deposit}\nView link: ${url}\nCRM: ${absUrl(`/admin/quotes/${quote.id}`)}`
     );
   }
 
@@ -79,6 +80,7 @@ export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, or
   const payUrl = `${origin}/pay/${invoice.id}`;
   const pdfUrl = `${origin}/api/invoices/${invoice.id}/pdf`;
   const eft = eftDetails(db.settings);
+  const adminInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
 
   const body = [
     `Hi ${customer.name},`,
@@ -100,11 +102,11 @@ export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, or
     label: allowGateway ? `Pay ${zar(invoice.amount)} deposit securely` : `View payment instructions`,
     url: payUrl,
   });
-  for (const inbox of notificationEmails(db.settings)) {
+  for (const inbox of adminInboxes) {
     await sendEmail(
       inbox,
       `Deposit invoice sent — ${invoice.number}`,
-      `Deposit invoice ${invoice.number} has been sent to ${customer.email}.\n\nClient: ${customer.name}\nAmount: ${zar(invoice.amount)}\nPayment mode: ${allowGateway ? "Gateway + EFT" : "EFT only"}\nPay page: ${payUrl}`
+      `Deposit invoice ${invoice.number} has been sent to ${customer.email}.\n\nClient: ${customer.name}\nAmount: ${zar(invoice.amount)}\nPayment mode: ${allowGateway ? "Gateway + EFT" : "EFT only"}\nPay page: ${payUrl}\nCRM: ${absUrl(`/admin/invoices/${invoice.id}`)}`
     );
   }
 

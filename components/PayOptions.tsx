@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import PayButton from "@/components/PayButton";
+import { gtagEvent } from "@/lib/gtag";
 
 // PayFast / EFT payment method selector on the public pay page.
 export default function PayOptions({
@@ -23,6 +24,7 @@ export default function PayOptions({
     try {
       await navigator.clipboard.writeText([...eftLines, `Reference: ${invoiceNumber}`].join("\n"));
       setCopied(true);
+      gtagEvent("eft_details_copied", { invoice_id: invoiceId });
       setTimeout(() => setCopied(false), 2000);
     } catch { /* clipboard unavailable — details are visible anyway */ }
   }
@@ -37,7 +39,10 @@ export default function PayOptions({
           ]).map((m) => (
             <button
               key={m.key}
-              onClick={() => setMethod(m.key)}
+              onClick={() => {
+                setMethod(m.key);
+                gtagEvent("payment_method_selected", { method: m.key, invoice_id: invoiceId });
+              }}
               style={{
                 flex: 1, padding: "11px 8px", border: "none", cursor: "pointer",
                 fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13,

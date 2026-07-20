@@ -14,6 +14,7 @@ const CONFIG_ITEMS_ALL = [
   ["/admin/pricing",  "Pricing",       "✦"],
   ["/admin/content",  "Content (CMS)", "✎"],
   ["/admin/reports",  "Reports",       "▱"],
+  ["/admin/google-analytics", "Google Analytics", "◔"],
   ["/admin/backups",  "Backups",       "⧉"],   // admin only
   ["/admin/users",    "Users",         "👤"],   // admin only
   ["/admin/settings", "Settings",      "⚙"],   // admin only

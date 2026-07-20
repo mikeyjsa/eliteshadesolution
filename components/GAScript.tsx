@@ -15,7 +15,7 @@ export default function GAScript({ id }: { id: string }) {
         window.dataLayer=window.dataLayer||[];
         function gtag(){dataLayer.push(arguments);}
         gtag('js',new Date());
-        gtag('config','${id}');
+        gtag('config','${id}',{ send_page_view:false });
       `}</Script>
     </>
   );

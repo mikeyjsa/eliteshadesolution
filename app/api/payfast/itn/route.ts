@@ -3,6 +3,7 @@ import { getDB, mutate, uid } from "@/lib/db";
 import { fakePayfastId } from "@/lib/payfast";
 import { sendEmail, render } from "@/lib/email";
 import { zar } from "@/lib/format";
+import { adminNotificationEmails, absUrl } from "@/lib/site";
 
 // Mock PayFast ITN (Instant Transaction Notification). On the real gateway
 // this is server-to-server and signature-verified; here the /pay page posts
@@ -37,8 +38,16 @@ export async function POST(req: NextRequest) {
   const db = await getDB();
   const q = db.quotes.find((x) => x.id === out.inv.quote_id);
   const c = q && db.customers.find((x) => x.id === q.customer_id);
+  const adminInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
   if (c) {
     await sendEmail(c.email, "Payment received — Elite Shade", render("Hi {{name}}, we've received your {{type}} of {{amt}}. Thank you! We'll be in touch about scheduling.", { name: c.name, type: out.inv.type, amt: zar(out.inv.amount) }));
+    for (const inbox of adminInboxes) {
+      await sendEmail(
+        inbox,
+        `Payment received — ${out.inv.number}`,
+        `${out.inv.type === "deposit" ? "Deposit" : "Balance"} payment has been received via PayFast.\n\nClient: ${c.name}\nInvoice: ${out.inv.number}\nAmount: ${zar(out.inv.amount)}\nStatus: ${out.inv.status}\nCRM: ${absUrl(`/admin/invoices/${out.inv.id}`)}`
+      );
+    }
   }
 
   return NextResponse.json({ ok: true });

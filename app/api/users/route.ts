@@ -14,8 +14,24 @@ export async function POST(req: NextRequest) {
   }
   const user: AdminUser = await mutate((db) => {
     const existing = db.users.find((u) => u.email.toLowerCase() === body.email.toLowerCase());
-    if (existing) { existing.name = body.name; existing.password = body.password; existing.role = body.role ?? "manager"; existing.active = true; return existing; }
-    const u: AdminUser = { id: uid("usr_"), name: body.name, email: body.email, password: body.password, role: body.role ?? "manager", active: true, created_at: new Date().toISOString() };
+    if (existing) {
+      existing.name = body.name;
+      existing.password = body.password;
+      existing.role = body.role ?? "manager";
+      existing.active = true;
+      existing.receive_admin_notifications = typeof body.receive_admin_notifications === "boolean" ? body.receive_admin_notifications : true;
+      return existing;
+    }
+    const u: AdminUser = {
+      id: uid("usr_"),
+      name: body.name,
+      email: body.email,
+      password: body.password,
+      role: body.role ?? "manager",
+      active: true,
+      receive_admin_notifications: typeof body.receive_admin_notifications === "boolean" ? body.receive_admin_notifications : true,
+      created_at: new Date().toISOString(),
+    };
     db.users.push(u);
     return u;
   });
@@ -32,6 +48,9 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.password === "string" && body.password) u.password = body.password;
     if (body.role === "admin" || body.role === "manager") u.role = body.role;
     if (typeof body.active === "boolean") u.active = body.active;
+    if (typeof body.receive_admin_notifications === "boolean") {
+      u.receive_admin_notifications = body.receive_admin_notifications;
+    }
   });
   return NextResponse.json({ ok: true });
 }

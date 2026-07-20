@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { gtagEvent } from "@/lib/gtag";
 
 export default function PayButton({ invoiceId }: { invoiceId: string }) {
   const [busy, setBusy] = useState(false);
@@ -8,6 +9,7 @@ export default function PayButton({ invoiceId }: { invoiceId: string }) {
 
   async function pay() {
     setBusy(true);
+    gtagEvent("payfast_payment_started", { invoice_id: invoiceId });
     await fetch("/api/payfast/itn", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

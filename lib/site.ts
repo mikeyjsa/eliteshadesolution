@@ -30,6 +30,31 @@ export function notificationEmails(settings: {
   return Array.from(new Set(list)).filter(Boolean);
 }
 
+export function adminNotificationEmails(source: {
+  settings: {
+    info_email?: string;
+    notification_emails?: string;
+  };
+  users?: Array<{
+    email: string;
+    active: boolean;
+    receive_admin_notifications?: boolean;
+    role?: string;
+  }>;
+}) {
+  const optedInUsers = (source.users || [])
+    .filter((user) => user.active && user.receive_admin_notifications !== false)
+    .map((user) => cleanEmail(user.email))
+    .filter(Boolean);
+
+  return Array.from(
+    new Set([
+      ...notificationEmails(source.settings),
+      ...optedInUsers,
+    ]),
+  ).filter(Boolean);
+}
+
 export function eftDetails(settings: { eft_details?: string }): string {
   return settings.eft_details?.trim() || DEFAULT_EFT_DETAILS;
 }

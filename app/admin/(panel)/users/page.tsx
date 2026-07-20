@@ -12,7 +12,15 @@ export default async function UsersPage() {
   if (!me || me.role !== "admin") redirect("/admin");
 
   const db = await getDB();
-  const users = db.users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active, created_at: u.created_at }));
+  const users = db.users.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    active: u.active,
+    receive_admin_notifications: u.receive_admin_notifications,
+    created_at: u.created_at,
+  }));
 
   return (
     <>

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mutate, uid } from "@/lib/db";
+import { getDB, mutate, uid } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { sendEmail } from "@/lib/email";
 import { promises as fs } from "fs";
 import { zar } from "@/lib/format";
 import { PAYMENT_PROOFS_DIR } from "@/lib/storage-paths";
+import { adminNotificationEmails, absUrl } from "@/lib/site";
 
 async function saveProof(dataUrl: string, originalName?: string): Promise<string> {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -82,6 +84,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   });
 
   if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const db = await getDB();
+  const quote = db.quotes.find((item) => item.id === result.quote_id);
+  const customer = quote ? db.customers.find((item) => item.id === quote.customer_id) : null;
+  const adminInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
+  const changedStatus = body.status === "paid" || body.status === "unpaid";
+  const touchedPayment = changedStatus || nextProofUrl || typeof body.payment_note === "string";
+
+  if (customer && touchedPayment) {
+    const noteSummary =
+      typeof body.payment_note === "string" && body.payment_note.trim()
+        ? `\nPayment note: ${body.payment_note.trim()}`
+        : "";
+    for (const inbox of adminInboxes) {
+      await sendEmail(
+        inbox,
+        `Invoice updated — ${result.number}`,
+        `An invoice payment record was updated in the admin.\n\nClient: ${customer.name}\nInvoice: ${result.number}\nAmount: ${zar(result.amount)}\nStatus: ${result.status}${nextProofUrl ? "\nProof of payment uploaded: yes" : ""}${noteSummary}\nCRM: ${absUrl(`/admin/invoices/${result.id}`)}`
+      );
+    }
+  }
   return NextResponse.json({ ok: true, invoice: result });
 }
 

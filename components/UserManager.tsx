@@ -8,6 +8,7 @@ interface User {
   email: string;
   role: "admin" | "manager";
   active: boolean;
+  receive_admin_notifications: boolean;
   created_at: string;
 }
 
@@ -16,13 +17,27 @@ const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: "var(
 
 function UserRow({ u, isCurrentUser, onRefresh }: { u: User; isCurrentUser: boolean; onRefresh: () => void }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: u.name, email: u.email, password: "", role: u.role, active: u.active });
+  const [form, setForm] = useState({
+    name: u.name,
+    email: u.email,
+    password: "",
+    role: u.role,
+    active: u.active,
+    receive_admin_notifications: u.receive_admin_notifications,
+  });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
   async function save() {
     setBusy(true);
-    const payload: Record<string, unknown> = { id: u.id, name: form.name, email: form.email, role: form.role, active: form.active };
+    const payload: Record<string, unknown> = {
+      id: u.id,
+      name: form.name,
+      email: form.email,
+      role: form.role,
+      active: form.active,
+      receive_admin_notifications: form.receive_admin_notifications,
+    };
     if (form.password) payload.password = form.password;
     const r = await fetch("/api/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     setBusy(false);
@@ -48,6 +63,11 @@ function UserRow({ u, isCurrentUser, onRefresh }: { u: User; isCurrentUser: bool
         <td style={{ padding: "11px 16px" }}>
           <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: u.active ? "var(--color-signal)" : "#a23c34", background: u.active ? "#eef4f0" : "#fbeceb", padding: "3px 9px", borderRadius: 12 }}>{u.active ? "Active" : "Inactive"}</span>
         </td>
+        <td style={{ padding: "11px 16px" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: u.receive_admin_notifications ? "var(--color-signal)" : "var(--color-steel)", background: u.receive_admin_notifications ? "#eef4f0" : "var(--color-mist)", padding: "3px 9px", borderRadius: 12 }}>
+            {u.receive_admin_notifications ? "Subscribed" : "Muted"}
+          </span>
+        </td>
         <td style={{ padding: "11px 16px", textAlign: "right" }}>
           <button onClick={(e) => { e.stopPropagation(); setEditing(!editing); }} style={{ background: "none", border: "none", color: "var(--color-brass)", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
             {editing ? "Cancel" : "Edit ✎"}
@@ -56,7 +76,7 @@ function UserRow({ u, isCurrentUser, onRefresh }: { u: User; isCurrentUser: bool
       </tr>
       {editing && (
         <tr style={{ background: "#f7f9fa" }}>
-          <td colSpan={5} style={{ padding: "18px 20px" }}>
+          <td colSpan={6} style={{ padding: "18px 20px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 12, alignItems: "flex-end" }}>
               <div>
                 <label style={lab}>Name</label>
@@ -82,6 +102,14 @@ function UserRow({ u, isCurrentUser, onRefresh }: { u: User; isCurrentUser: bool
                   <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
                   Active
                 </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer", color: "var(--color-navy)" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.receive_admin_notifications}
+                    onChange={(e) => setForm({ ...form, receive_admin_notifications: e.target.checked })}
+                  />
+                  Receive admin notifications
+                </label>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <button className="btn-brass" onClick={save} disabled={busy} style={{ padding: "9px 18px", whiteSpace: "nowrap" }}>
@@ -99,7 +127,13 @@ function UserRow({ u, isCurrentUser, onRefresh }: { u: User; isCurrentUser: bool
 
 export default function UserManager({ users: initial, currentUserId }: { users: User[]; currentUserId: string }) {
   const [users, setUsers] = useState(initial);
-  const [newForm, setNewForm] = useState({ name: "", email: "", password: "", role: "manager" });
+  const [newForm, setNewForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "manager",
+    receive_admin_notifications: true,
+  });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const router = useRouter();
@@ -114,7 +148,11 @@ export default function UserManager({ users: initial, currentUserId }: { users: 
     setBusy(true);
     const r = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newForm) });
     setBusy(false);
-    if (r.ok) { setMsg("User created."); setNewForm({ name: "", email: "", password: "", role: "manager" }); refresh(); }
+    if (r.ok) {
+      setMsg("User created.");
+      setNewForm({ name: "", email: "", password: "", role: "manager", receive_admin_notifications: true });
+      refresh();
+    }
     else setMsg((await r.json()).error ?? "Error");
   }
 
@@ -134,6 +172,7 @@ export default function UserManager({ users: initial, currentUserId }: { users: 
                 <th style={{ padding: "11px 16px" }}>Email</th>
                 <th style={{ padding: "11px 16px" }}>Role</th>
                 <th style={{ padding: "11px 16px" }}>Status</th>
+                <th style={{ padding: "11px 16px" }}>Notifications</th>
                 <th style={{ padding: "11px 16px", textAlign: "right" }}>Edit</th>
               </tr>
             </thead>
@@ -142,7 +181,7 @@ export default function UserManager({ users: initial, currentUserId }: { users: 
                 <UserRow key={u.id} u={u} isCurrentUser={u.id === currentUserId} onRefresh={refresh} />
               ))}
               {users.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 28, textAlign: "center", color: "var(--color-steel)" }}>No users yet.</td></tr>
+                <tr><td colSpan={6} style={{ padding: 28, textAlign: "center", color: "var(--color-steel)" }}>No users yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -157,11 +196,19 @@ export default function UserManager({ users: initial, currentUserId }: { users: 
             <div><label style={lab}>Password</label><input type="text" style={inp} value={newForm.password} onChange={(e) => setNewForm({ ...newForm, password: e.target.value })} /></div>
             <div>
               <label style={lab}>Role</label>
-              <select style={inp} value={newForm.role} onChange={(e) => setNewForm({ ...newForm, role: e.target.value })}>
+              <select style={inp} value={newForm.role} onChange={(e) => setNewForm({ ...newForm, role: e.target.value as "admin" | "manager" })}>
                 <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer", color: "var(--color-navy)" }}>
+              <input
+                type="checkbox"
+                checked={newForm.receive_admin_notifications}
+                onChange={(e) => setNewForm({ ...newForm, receive_admin_notifications: e.target.checked })}
+              />
+              Receive all admin notifications
+            </label>
             <button className="btn-brass" onClick={addUser} disabled={busy}>{busy ? "Creating…" : "Create user"}</button>
             {msg && <p style={{ fontSize: 12.5, color: msg.startsWith("User") ? "var(--color-signal)" : "#a23c34", margin: 0 }}>{msg}</p>}
           </div>

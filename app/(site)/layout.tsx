@@ -2,6 +2,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Reveal from "@/components/Reveal";
 import GAScript from "@/components/GAScript";
+import GAPageTracker from "@/components/GAPageTracker";
 import AnimationLayer from "@/components/AnimationLayer";
 import { getDB } from "@/lib/db";
 
@@ -17,6 +18,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     <>
       <GAScript id={gaId} />
+      <GAPageTracker id={gaId} />
       <Nav />
       <main style={{ minHeight: "70vh" }}>{children}</main>
       <Footer

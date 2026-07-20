@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { dateZA } from "@/lib/format";
 import type { Settings, EmailLog } from "@/lib/types";
 
-type Tab = "company" | "email" | "templates" | "access" | "outbox";
+type Tab = "company" | "email" | "analytics" | "templates" | "access" | "outbox";
 
 export default function SettingsForm({ settings, emails }: { settings: Settings; emails: EmailLog[] }) {
   const [s, setS] = useState(settings);
@@ -39,6 +39,7 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
   const tabs: { key: Tab; label: string }[] = [
     { key: "company", label: "Company" },
     { key: "email", label: "Email" },
+    { key: "analytics", label: "Analytics" },
     { key: "templates", label: "Templates" },
     { key: "access", label: "Access" },
     { key: "outbox", label: `Outbox (${emails.length})` },
@@ -119,13 +120,6 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               </div>
               <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
                 Stored in Settings so PayGate can be switched on later without another code update.
-              </p>
-            </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={lab}>Google Analytics Measurement ID</label>
-              <input style={inp} value={s.ga_measurement_id} onChange={(e) => set("ga_measurement_id", e.target.value)} placeholder="G-XXXXXXXXXX (leave blank to disable)" />
-              <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
-                Enter your GA4 Measurement ID to enable tracking on the public site. Leave blank to disable.
               </p>
             </div>
           </div>
@@ -223,6 +217,69 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
             </div>
           ))}
           <p style={{ fontSize: 12, color: "var(--color-steel)", margin: 0 }}>Variables like <code>{"{{name}}"}</code>, <code>{"{{range}}"}</code>, <code>{"{{total}}"}</code>, <code>{"{{date}}"}</code>, <code>{"{{paylink}}"}</code> are filled automatically.</p>
+        </div>
+      )}
+
+      {tab === "analytics" && (
+        <div style={card}>
+          <h3 className="display" style={{ fontSize: 16, color: "var(--color-navy)", marginBottom: 14 }}>Google Analytics</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }} className="es-form-grid">
+            <div>
+              <label style={lab}>GA4 Measurement ID</label>
+              <input
+                style={inp}
+                value={s.ga_measurement_id}
+                onChange={(e) => set("ga_measurement_id", e.target.value)}
+                placeholder="G-XXXXXXXXXX"
+              />
+              <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
+                Used on the public site for pageviews and event tracking.
+              </p>
+            </div>
+            <div>
+              <label style={lab}>GA4 Property ID</label>
+              <input
+                style={inp}
+                value={s.ga_property_id ?? ""}
+                onChange={(e) => set("ga_property_id", e.target.value)}
+                placeholder="123456789"
+              />
+              <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
+                Needed for the admin Google Analytics reporting dashboard.
+              </p>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={lab}>Service account email</label>
+              <input
+                style={inp}
+                value={s.ga_service_account_email ?? ""}
+                onChange={(e) => set("ga_service_account_email", e.target.value)}
+                placeholder="ga-reports@your-project.iam.gserviceaccount.com"
+              />
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={lab}>Service account private key</label>
+              <textarea
+                style={{ ...inp, resize: "vertical", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+                rows={8}
+                value={s.ga_service_account_private_key ?? ""}
+                onChange={(e) => set("ga_service_account_private_key", e.target.value)}
+                placeholder={"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"}
+              />
+              <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
+                Add this service account as a Viewer or Analyst on the GA4 property, then the admin <code>Google Analytics</code> page can pull live reports.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 18, padding: "14px 16px", borderRadius: 12, background: "var(--color-mist)" }}>
+            <div style={{ fontSize: 11.5, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--color-steel)", fontWeight: 700, marginBottom: 6 }}>
+              Tracked public-site events
+            </div>
+            <div style={{ fontSize: 13.5, color: "var(--color-navy)", lineHeight: 1.7 }}>
+              <code>page_view</code>, <code>quote_submitted</code>, <code>estimate_email_intent</code>, <code>contact_submitted</code>, <code>quote_accepted</code>, <code>deposit_payment_link_opened</code>, <code>payment_method_selected</code>, <code>payfast_payment_started</code>, <code>eft_details_copied</code>
+            </div>
+          </div>
         </div>
       )}
 
