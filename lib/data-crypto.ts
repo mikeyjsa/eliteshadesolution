@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypt
 
 const ENC_MARKER = "esdb-v1";
 const ENC_ALGO = "aes-256-gcm";
-const KEY_ENV = "sdafasdFASDF@R$324324234r23RQAEWFEWRY$%&EYUHTRSFDGFSZEW#Q$T^YU%E^IKYFJGHDFSFADSF";
+const KEY_ENV = "ELITE_DB_PASSPHRASE";
 const SALT = "elite-shade-db";
 
 type Envelope = {
