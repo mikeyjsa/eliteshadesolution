@@ -123,15 +123,39 @@ Recommended application settings:
 
 - Node.js version: `24.x` if available, otherwise the newest supported LTS version
 - Application mode: `Production`
-- Application root: the folder where this repo is uploaded
+- Application root: `/home/<cpanel-user>/public_html/www`
 - Application URL: `/` for the main site, or a subdomain path if you deploy it separately
 - Application startup file: `app.js`
 
-Typical deploy flow:
+Recommended Git layout:
 
-1. Upload this repository to the application root on the server.
-2. In the Node.js app manager, create the application and set the startup file to `app.js`.
-3. Open a terminal/SSH session in the app root and run:
+1. Do **not** keep the Git repository inside the live app root.
+2. Create a **cPanel-managed repository in a separate path**, for example:
+
+```bash
+/home/<cpanel-user>/repositories/elite-shade
+```
+
+3. Keep the live Node application root as:
+
+```bash
+/home/<cpanel-user>/public_html/www
+```
+
+4. Commit the included `.cpanel.yml` file to the repo. cPanel Git deployment will then copy the app from the repository into the live app root while leaving `.data/` alone.
+
+Why this matters:
+
+- If the repo lives inside `public_html/www`, the live app becomes a dirty working tree and future pulls/deploys will eventually fail.
+- If the repo lives outside the live app root, cPanel can keep the repo clean and deploy into the runtime folder safely.
+- The included `.cpanel.yml` excludes `.data/`, so DB, uploads, and backups survive deploys.
+
+First-time app bootstrap:
+
+1. Clone the repository into the separate cPanel Git path.
+2. In the Node.js app manager, point the application root at `/home/<cpanel-user>/public_html/www` and the startup file at `app.js`.
+3. Copy or deploy the app files into the live app root.
+4. Open a terminal/SSH session in the live app root and run:
 
 ```bash
 npm install
@@ -139,7 +163,7 @@ npm run build
 mkdir -p .data
 ```
 
-4. Set environment variables in the app manager:
+5. Set environment variables in the app manager:
 
 ```bash
 NODE_ENV=production
@@ -147,13 +171,23 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ELITE_DB_PASSPHRASE=use-a-long-random-secret
 ```
 
-5. Restart the application from cPanel after changes.
+6. Restart the application from cPanel after changes.
+
+Ongoing deploy flow:
+
+1. Push to GitHub.
+2. In cPanel Git Version Control, pull/update the clean repository in `/home/<cpanel-user>/repositories/elite-shade`.
+3. Run `Deploy HEAD Commit`.
+4. cPanel runs `.cpanel.yml`, syncs files into `/home/<cpanel-user>/public_html/www`, and touches `tmp/restart.txt`.
+5. The live app restarts without replacing `.data/`.
 
 Important:
 
 - The writable `.data/` folder must exist in the application root.
 - Uploaded files, the JSON database, and backups all live under `.data/`.
-- If the host uses Passenger restarts, touching `tmp/restart.txt` may also be required depending on the panel configuration.
+- The included `.cpanel.yml` explicitly preserves `.data/`.
+- If your host disables shell access, Git deployment can still work as long as the repository is clean and `.cpanel.yml` is present.
+- If your host cannot complete `next build` reliably on-server, build locally first when needed and avoid deleting the live `node_modules` and `.next` until the replacement artifacts are ready.
 
 ### Git deploy flow
 

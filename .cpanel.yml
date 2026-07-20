@@ -1,0 +1,10 @@
+---
+deployment:
+  tasks:
+    - export REPOPATH=$PWD
+    - export DEPLOYPATH=/home/elitesi8c1n5/public_html/www
+    - /bin/mkdir -p "$DEPLOYPATH"
+    - /bin/mkdir -p "$DEPLOYPATH/.data"
+    - /usr/bin/rsync -a --delete --exclude='.git' --exclude='.cpanel.yml' --exclude='.data' --exclude='.env' --exclude='.env.*' --exclude='.DS_Store' --exclude='playwright-report' --exclude='test-results' --exclude='tests' --exclude='tmp' "$REPOPATH/" "$DEPLOYPATH/"
+    - /bin/mkdir -p "$DEPLOYPATH/tmp"
+    - /usr/bin/touch "$DEPLOYPATH/tmp/restart.txt"
