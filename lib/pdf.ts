@@ -248,14 +248,16 @@ export async function invoicePDF(
   }
 
   // ── COMPANY FOOTER BAND ──────────────────────────────────────────────────
-  page.drawRectangle({ x: 0, y: 0, width, height: 52, color: NAVY });
+  page.drawRectangle({ x: 0, y: 0, width, height: 72, color: NAVY });
   t(settings.company_name + " · " + (settings.company_address || "Cape Town, Western Cape"),
-    40, 34, 8, font, rgb(0.75, 0.82, 0.87));
-  t("Thank you for choosing Elite Shade.", 40, 20, 8, font, rgb(0.6, 0.68, 0.75));
+    40, 50, 8, font, rgb(0.75, 0.82, 0.87));
+  t("Jean-Pierre Miller · Sales · 067 618 2422", 40, 34, 8, font, rgb(0.6, 0.68, 0.75));
+  t("Michael Theron · Marketing / Online sales · 060 949 1197", 40, 20, 8, font, rgb(0.6, 0.68, 0.75));
   if (settings.vat_enabled) {
-    t("VAT Reg: " + settings.vat_number, width - 170, 34, 8, font, rgb(0.75, 0.82, 0.87));
+    t("VAT Reg: " + settings.vat_number, width - 170, 50, 8, font, rgb(0.75, 0.82, 0.87));
   }
-  t(settings.email_from || "quotes@eliteshadesolutions.co.za", width - 230, 20, 8, font, rgb(0.6, 0.68, 0.75));
+  t(settings.email_from || "sales@eliteshadesolutions.co.za", width - 230, 34, 8, font, rgb(0.6, 0.68, 0.75));
+  t("info@eliteshadesolutions.co.za", width - 230, 20, 8, font, rgb(0.6, 0.68, 0.75));
 
   return doc.save();
 }
@@ -415,12 +417,14 @@ export async function quotePDF(
   drawWrapped(acceptUrl, 56, panelY - 56, width - 130, 9, bold, NAVY);
 
   // ── FOOTER ───────────────────────────────────────────────────────────────
-  page.drawRectangle({ x: 0, y: 0, width, height: 52, color: NAVY });
+  page.drawRectangle({ x: 0, y: 0, width, height: 72, color: NAVY });
   t(settings.company_name + " · " + (settings.company_address || "Cape Town, Western Cape"),
-    40, 34, 8, font, rgb(0.75, 0.82, 0.87));
-  t("Prices valid for 14 days. Final scope confirmed after a free site survey.", 40, 20, 8, font, rgb(0.6, 0.68, 0.75));
-  if (settings.vat_enabled) t("VAT Reg: " + settings.vat_number, width - 170, 34, 8, font, rgb(0.75, 0.82, 0.87));
-  t(settings.email_from || "quotes@eliteshadesolutions.co.za", width - 230, 20, 8, font, rgb(0.6, 0.68, 0.75));
+    40, 50, 8, font, rgb(0.75, 0.82, 0.87));
+  t("Jean-Pierre Miller · Sales · 067 618 2422", 40, 34, 8, font, rgb(0.6, 0.68, 0.75));
+  t("Michael Theron · Marketing / Online sales · 060 949 1197", 40, 20, 8, font, rgb(0.6, 0.68, 0.75));
+  if (settings.vat_enabled) t("VAT Reg: " + settings.vat_number, width - 170, 50, 8, font, rgb(0.75, 0.82, 0.87));
+  t(settings.email_from || "sales@eliteshadesolutions.co.za", width - 230, 34, 8, font, rgb(0.6, 0.68, 0.75));
+  t("info@eliteshadesolutions.co.za", width - 230, 20, 8, font, rgb(0.6, 0.68, 0.75));
 
   return doc.save();
 }

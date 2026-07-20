@@ -13,8 +13,32 @@ export interface EmailCta {
   url: string;
 }
 
+interface EmailFooterContact {
+  salesName: string;
+  salesPhone: string;
+  marketingName: string;
+  marketingPhone: string;
+  salesEmail: string;
+  infoEmail: string;
+}
+
 // Branded HTML email template — table-based for email client compat.
-export function buildHtml(subject: string, body: string, fromName = "Elite Shade Solutions", cta?: EmailCta): string {
+export function buildHtml(
+  subject: string,
+  body: string,
+  fromName = "Elite Shade Solutions",
+  fromEmail = "sales@eliteshadesolutions.co.za",
+  footer?: EmailFooterContact,
+  cta?: EmailCta
+): string {
+  const contact = footer ?? {
+    salesName: "Jean-Pierre Miller",
+    salesPhone: "067 618 2422",
+    marketingName: "Michael Theron",
+    marketingPhone: "060 949 1197",
+    salesEmail: "sales@eliteshadesolutions.co.za",
+    infoEmail: "info@eliteshadesolutions.co.za",
+  };
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,7 +94,7 @@ export function buildHtml(subject: string, body: string, fromName = "Elite Shade
             <tr>
               <td style="padding:20px 24px;">
                 <p style="margin:0 0 10px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5b6b7a;">Questions?</p>
-                <p style="margin:0;font-size:14px;color:#283746;line-height:1.6;">Reply to this email or reach us on WhatsApp — one of our owners will get back to you directly.</p>
+                <p style="margin:0;font-size:14px;color:#283746;line-height:1.6;">Reply to this email, call ${contact.salesName} on ${contact.salesPhone}, or contact ${contact.marketingName} on ${contact.marketingPhone}.</p>
               </td>
             </tr>
           </table>
@@ -84,9 +108,13 @@ export function buildHtml(subject: string, body: string, fromName = "Elite Shade
             <tr>
               <td style="font-size:12px;color:#9fb0bd;line-height:1.7;">
                 <strong style="color:#fff;">${fromName}</strong><br/>
-                Cape Town, Western Cape · <a href="mailto:quotes@eliteshadesolutions.co.za" style="color:#c9a24b;text-decoration:none;">quotes@eliteshadesolutions.co.za</a>
+                Cape Town, Western Cape<br/>
+                ${contact.salesName} · Sales · ${contact.salesPhone}<br/>
+                ${contact.marketingName} · Marketing / Online sales · ${contact.marketingPhone}
               </td>
               <td align="right" style="font-size:11px;color:#6f7f8c;">
+                <a href="mailto:${contact.salesEmail}" style="color:#c9a24b;text-decoration:none;">${contact.salesEmail}</a><br/>
+                <a href="mailto:${contact.infoEmail}" style="color:#c9a24b;text-decoration:none;">${contact.infoEmail}</a><br/>
                 Prices are indicative estimates.<br/>Final pricing confirmed after a free site survey.
               </td>
             </tr>
@@ -104,9 +132,17 @@ export function buildHtml(subject: string, body: string, fromName = "Elite Shade
 export async function sendEmail(to: string, subject: string, body: string, cta?: EmailCta): Promise<EmailLog> {
   const db = await getDB();
   const key = db.settings.resend_api_key?.trim();
-  const from = db.settings.email_from || "quotes@eliteshadesolutions.co.za";
+  const from = db.settings.email_from || "sales@eliteshadesolutions.co.za";
   const fromName = db.settings.company_name || "Elite Shade Solutions";
-  const html = buildHtml(subject, body, fromName, cta);
+  const block = db.content.find((c) => c.type === "block" && c.slug === "contact_info");
+  const html = buildHtml(subject, body, fromName, from, {
+    salesName: block?.meta.sales_name || "Jean-Pierre Miller",
+    salesPhone: block?.meta.sales_phone || "067 618 2422",
+    marketingName: block?.meta.marketing_name || "Michael Theron",
+    marketingPhone: block?.meta.marketing_phone || "060 949 1197",
+    salesEmail: block?.meta.sales_email || "sales@eliteshadesolutions.co.za",
+    infoEmail: block?.meta.info_email || "info@eliteshadesolutions.co.za",
+  }, cta);
   const provider = db.settings.email_provider || (key ? "resend" : "outbox");
 
   let channel: EmailLog["channel"] = "outbox";

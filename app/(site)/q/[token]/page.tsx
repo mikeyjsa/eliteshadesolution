@@ -117,8 +117,8 @@ export default async function ClientQuotePage({ params }: { params: Promise<{ to
 
         <p style={{ fontSize: 12, color: "var(--color-steel)", marginTop: 22, lineHeight: 1.7, textAlign: "center" }}>
           Questions about this quote? Reply to the email it arrived in, or reach us at{" "}
-          <a href={`mailto:${db.settings.email_from || "quotes@eliteshadesolutions.co.za"}`} style={{ color: "var(--color-warn)" }}>
-            {db.settings.email_from || "quotes@eliteshadesolutions.co.za"}
+          <a href={`mailto:${db.settings.email_from || "sales@eliteshadesolutions.co.za"}`} style={{ color: "var(--color-warn)" }}>
+            {db.settings.email_from || "sales@eliteshadesolutions.co.za"}
           </a>. Final scope is confirmed at your free site survey.
         </p>
       </div>

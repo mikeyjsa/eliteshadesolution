@@ -10,7 +10,18 @@ export const metadata = {
   alternates: { canonical: "/contact" },
 };
 
-const D_CONTACT = { phone: "082 123 4567", email: "quotes@eliteshadesolutions.co.za", whatsapp: "27821234567", areas: "Southern & Northern Suburbs, Helderberg, Atlantic Seaboard, Winelands." };
+const D_CONTACT = {
+  sales_name: "Jean-Pierre Miller",
+  sales_role: "Sales",
+  sales_phone: "067 618 2422",
+  sales_whatsapp: "27676182422",
+  marketing_name: "Michael Theron",
+  marketing_role: "Marketing / Online sales",
+  marketing_phone: "060 949 1197",
+  sales_email: "sales@eliteshadesolutions.co.za",
+  info_email: "info@eliteshadesolutions.co.za",
+  areas: "Southern & Northern Suburbs, Helderberg, Atlantic Seaboard, Winelands.",
+};
 
 export default async function Contact() {
   const db = await getDB();
@@ -29,13 +40,29 @@ export default async function Contact() {
         <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gridTemplateColumns: "1.3fr 0.7fr", gap: 30 }} className="es-2col">
           <ContactForm />
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <a href={`https://wa.me/${info.whatsapp}`} target="_blank" rel="noreferrer" className="card" style={{ padding: 22, textDecoration: "none", borderLeft: "4px solid var(--color-signal)" }}>
-              <strong className="display" style={{ color: "var(--color-navy)", fontSize: 16 }}>WhatsApp us</strong>
-              <p style={{ color: "var(--color-steel)", fontSize: 14, margin: "6px 0 0" }}>{info.phone} — fastest reply</p>
+            <a href={`https://wa.me/${info.sales_whatsapp}`} target="_blank" rel="noreferrer" className="card" style={{ padding: 22, textDecoration: "none", borderLeft: "4px solid var(--color-signal)" }}>
+              <strong className="display" style={{ color: "var(--color-navy)", fontSize: 16 }}>WhatsApp sales</strong>
+              <p style={{ color: "var(--color-steel)", fontSize: 14, margin: "6px 0 0" }}>{info.sales_name} · {info.sales_phone}</p>
             </a>
             <div className="card" style={{ padding: 22 }}>
-              <strong className="display" style={{ color: "var(--color-navy)", fontSize: 16 }}>Email</strong>
-              <p style={{ color: "var(--color-steel)", fontSize: 14, margin: "6px 0 0" }}>{info.email}</p>
+              <strong className="display" style={{ color: "var(--color-navy)", fontSize: 16 }}>Team contacts</strong>
+              <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-navy)" }}>{info.sales_name}</div>
+                  <div style={{ color: "var(--color-steel)", fontSize: 13.5 }}>{info.sales_role} · {info.sales_phone}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-navy)" }}>{info.marketing_name}</div>
+                  <div style={{ color: "var(--color-steel)", fontSize: 13.5 }}>{info.marketing_role} · {info.marketing_phone}</div>
+                </div>
+              </div>
+            </div>
+            <div className="card" style={{ padding: 22 }}>
+              <strong className="display" style={{ color: "var(--color-navy)", fontSize: 16 }}>Shared email</strong>
+              <p style={{ color: "var(--color-steel)", fontSize: 14, margin: "6px 0 0" }}>
+                <a href={`mailto:${info.sales_email}`} style={{ color: "inherit", textDecoration: "none" }}>{info.sales_email}</a><br />
+                <a href={`mailto:${info.info_email}`} style={{ color: "inherit", textDecoration: "none" }}>{info.info_email}</a>
+              </p>
             </div>
             <div className="card" style={{ padding: 0, overflow: "hidden" }}>
               <PhotoFrame photo={SITE_PHOTOS.garden} sizes="(max-width: 760px) 100vw, 30vw" style={{ aspectRatio: "4 / 3" }} />

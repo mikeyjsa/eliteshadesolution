@@ -138,7 +138,7 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }} className="es-form-grid">
                 <div>
                   <label style={lab}>SMTP username</label>
-                  <input style={inp} value={s.smtp_user ?? ""} onChange={(e) => set("smtp_user", e.target.value)} placeholder="quotes@yourdomain.co.za" />
+                  <input style={inp} value={s.smtp_user ?? ""} onChange={(e) => set("smtp_user", e.target.value)} placeholder="sales@yourdomain.co.za" />
                 </div>
                 <div>
                   <label style={lab}>SMTP password</label>

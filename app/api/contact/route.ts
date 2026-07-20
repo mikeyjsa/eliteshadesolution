@@ -6,6 +6,7 @@ import type { Customer, Quote } from "@/lib/types";
 export async function POST(req: NextRequest) {
   const f = await req.json();
   if (!f?.name || !f?.email) return NextResponse.json({ error: "Required" }, { status: 400 });
+  const teamInbox = "sales@eliteshadesolutions.co.za";
 
   const now = new Date().toISOString();
 
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   // Notify the team
   await sendEmail(
-    "quotes@eliteshadesolutions.co.za",
+    teamInbox,
     `New contact form enquiry — ${f.name}`,
     `${f.name} submitted a contact form and has been added to the CRM pipeline.\n\nPhone: ${f.phone || "—"}\nEmail: ${f.email}\nSuburb: ${f.suburb || "—"}\n\nMessage:\n${f.message || "(no message)"}\n\nView in CRM: http://localhost:4700/admin/leads`
   );

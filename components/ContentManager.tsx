@@ -32,9 +32,15 @@ const BLOCK_FIELDS: Record<string, { label: string; fields: { key: string; label
   contact_info: {
     label: "Contact — Details",
     fields: [
-      { key: "phone", label: "Phone", type: "text" },
-      { key: "email", label: "Email", type: "text" },
-      { key: "whatsapp", label: "WhatsApp number (E.164, e.g. 27821234567)", type: "text" },
+      { key: "sales_name", label: "Sales contact name", type: "text" },
+      { key: "sales_role", label: "Sales contact role", type: "text" },
+      { key: "sales_phone", label: "Sales contact phone", type: "text" },
+      { key: "sales_whatsapp", label: "Sales WhatsApp number (E.164, e.g. 27821234567)", type: "text" },
+      { key: "marketing_name", label: "Marketing contact name", type: "text" },
+      { key: "marketing_role", label: "Marketing contact role", type: "text" },
+      { key: "marketing_phone", label: "Marketing contact phone", type: "text" },
+      { key: "sales_email", label: "Shared sales email", type: "text" },
+      { key: "info_email", label: "Shared info email", type: "text" },
       { key: "areas", label: "Service areas", type: "textarea" },
     ],
   },

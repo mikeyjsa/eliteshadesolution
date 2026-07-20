@@ -68,8 +68,10 @@ export default function Footer({ facebookUrl = "", instagramUrl = "" }: { facebo
           <h4 style={{ color: "#fff", fontSize: 12, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: 14 }}>Reach us</h4>
           <p style={{ fontSize: 13.5, lineHeight: 1.9 }}>
             Cape Town, Western Cape<br />
-            quotes@eliteshadesolutions.co.za<br />
-            WhatsApp · 082 123 4567
+            Jean-Pierre Miller · Sales · 067 618 2422<br />
+            Michael Theron · Marketing / Online sales · 060 949 1197<br />
+            sales@eliteshadesolutions.co.za<br />
+            info@eliteshadesolutions.co.za
           </p>
           {hasSocial && (
             <div style={{ marginTop: 12 }}>

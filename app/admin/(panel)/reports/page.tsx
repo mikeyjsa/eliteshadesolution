@@ -14,6 +14,8 @@ export default async function Reports() {
   const finals = quotes.filter((q) => q.final_total != null).map((q) => q.final_total!);
   const avgJob = finals.length ? finals.reduce((a, b) => a + b, 0) / finals.length : 0;
   const conv = quotes.length ? Math.round((closed.length / quotes.length) * 100) : 0;
+  const gaId = db.settings.ga_measurement_id?.trim() || "";
+  const gaLive = Boolean(gaId);
 
   // sources
   const sourceCounts: Record<string, number> = {};
@@ -80,9 +82,16 @@ export default async function Reports() {
             <Stat k="Total leads captured" v={String(quotes.length)} />
             <Stat k="Estimate emails sent" v={String(db.emails.length)} />
           </Panel>
+
+          <Panel title="Website analytics">
+            <Stat k="GA4 tracking status" v={gaLive ? "Connected" : "Not configured"} />
+            <Stat k="Measurement ID" v={gaId || "Add in Settings"} />
+            <Stat k="Tracked site events" v="quote_submitted, estimate_email_intent, contact_submitted" />
+            <Stat k="Tracking scope" v="All public pages" />
+          </Panel>
         </div>
         <p style={{ fontSize: 12.5, color: "var(--color-steel)", marginTop: 18 }}>
-          All figures read live from the same store as the CRM — no separate analytics build. Add GA4 on the public site for traffic-level attribution.
+          CRM figures read live from the same store as the pipeline, while GA4 handles public-site traffic attribution. Add or change the GA4 Measurement ID in Settings and it loads across every public page automatically.
         </p>
       </div>
       <style>{`@media (max-width:900px){ .es-kpi{ grid-template-columns:1fr 1fr !important; } .es-2col{ grid-template-columns:1fr !important; } }`}</style>

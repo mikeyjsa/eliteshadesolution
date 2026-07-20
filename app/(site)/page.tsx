@@ -64,10 +64,26 @@ export default async function Home() {
     name: SITE_NAME,
     description: SITE_DESCRIPTION,
     url: absUrl("/"),
-    email: "quotes@eliteshadesolutions.co.za",
+    email: "sales@eliteshadesolutions.co.za",
     areaServed: "Cape Town, Western Cape, South Africa",
     image: absUrl("/opengraph-image"),
     serviceType: "Shade sail supply and installation",
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "sales",
+        name: "Jean-Pierre Miller",
+        telephone: "+27 67 618 2422",
+        email: "sales@eliteshadesolutions.co.za",
+      },
+      {
+        "@type": "ContactPoint",
+        contactType: "marketing / online sales",
+        name: "Michael Theron",
+        telephone: "+27 60 949 1197",
+        email: "info@eliteshadesolutions.co.za",
+      },
+    ],
     makesOffer: {
       "@type": "Offer",
       availability: "https://schema.org/InStock",
