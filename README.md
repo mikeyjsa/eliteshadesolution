@@ -11,7 +11,8 @@ business blueprint (`../Elite-Shade-Solutions-Business-Blueprint.html`).
 - **Tailwind v4** (`@theme` tokens) + custom CSS — "engineered tension" design system
 - **File-based JSON store** (`.data/db.json`, auto-seeded) via `lib/db.ts` — swap to Supabase/Postgres later
 - **File-backed uploads** under `.data/uploads/`, served at `/uploads/...` — only relative file paths are stored in the DB, never binary file contents
-- **Mock PayFast** (hosted page + ITN webhook) and **mock email** — swap real keys later
+- **PayFast/EFT payment flow** with an admin switch for **EFT-only mode**
+- **Outbox, Resend, or SMTP email delivery**
 - **pdf-lib** for branded invoice PDFs
 - Optional **AES-256-GCM at-rest encryption** for the live DB and backups via `ELITE_DB_PASSPHRASE`
 
@@ -61,7 +62,7 @@ Password gate — scaffold password **`eliteshade`** (change in Settings).
 - **CRM Pipeline** — drag-and-drop kanban (6 stages); cards open the quote detail
 - **Quote detail** — confirm firm price → generate deposit/balance invoice → take
   mock PayFast payment → schedule install; activity log
-- **Invoices** — list + PayFast status + PDF
+- **Invoices** — list + payment status + PDF
 - **Schedule** — month calendar of installs
 - **Pricing** — editable rates + deposit % + VAT; **drives the live calculator**
 - **Content (CMS)** — gallery + blog manage/publish
@@ -87,6 +88,7 @@ Recommended:
 
 - Use a long random `ELITE_DB_PASSPHRASE` and keep it stable. Changing it later without re-encrypting data will prevent the app from reading existing encrypted DB/backup files.
 - Set your final custom domain in `NEXT_PUBLIC_SITE_URL` so canonicals, sitemap, robots, and social cards point at the correct host.
+- If you plan to use SMTP from your hosting provider, keep the mailbox credentials ready for the in-app Settings screen. They are not required as environment variables.
 
 ### Required persistent volume
 
@@ -113,6 +115,46 @@ npm run start
 The production start script respects Railway's `PORT` env var automatically and
 falls back to `4700` locally.
 
+### cPanel / Passenger Node hosting
+
+If your host provides cPanel's Node.js Application Manager, this app can also run there as a normal Node deployment instead of as a static export.
+
+Recommended application settings:
+
+- Node.js version: `24.x` if available, otherwise the newest supported LTS version
+- Application mode: `Production`
+- Application root: the folder where this repo is uploaded
+- Application URL: `/` for the main site, or a subdomain path if you deploy it separately
+- Application startup file: `app.js`
+
+Typical deploy flow:
+
+1. Upload this repository to the application root on the server.
+2. In the Node.js app manager, create the application and set the startup file to `app.js`.
+3. Open a terminal/SSH session in the app root and run:
+
+```bash
+npm install
+npm run build
+mkdir -p .data
+```
+
+4. Set environment variables in the app manager:
+
+```bash
+NODE_ENV=production
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+ELITE_DB_PASSPHRASE=use-a-long-random-secret
+```
+
+5. Restart the application from cPanel after changes.
+
+Important:
+
+- The writable `.data/` folder must exist in the application root.
+- Uploaded files, the JSON database, and backups all live under `.data/`.
+- If the host uses Passenger restarts, touching `tmp/restart.txt` may also be required depending on the panel configuration.
+
 ### Git deploy flow
 
 1. Push this repository to GitHub.
@@ -129,6 +171,11 @@ falls back to `4700` locally.
 3. Upload a proof of payment on an invoice and confirm the file lands under `.data/uploads/payment-proofs/`.
 4. Open `https://your-domain.com/robots.txt` and `https://your-domain.com/sitemap.xml`.
 5. Verify that a social share preview uses the generated Open Graph image.
+6. In `/admin/settings`, choose your email delivery method:
+   - `SMTP` for your mailbox server
+   - `Resend` if you later move to an API-based provider
+   - `Outbox only` if you want to stage the site without live sending
+7. In `/admin/settings`, switch `Customer payment mode` to `EFT only` until your live gateway is active.
 
 ## Quote engine
 
@@ -140,6 +187,6 @@ labour, and returns a ±12% range with VAT separate. Rates come from the editabl
 
 ## Swap points (deferred to real services)
 
-`lib/db.ts` (→ Supabase/Postgres) · `lib/payfast.ts` (→ PayFast live keys + ITN
-signature verification) · `lib/email.ts` (→ Resend/Postmark) · `lib/auth.ts` (→
+`lib/db.ts` (→ Supabase/Postgres) · `lib/payfast.ts` (→ PayFast/PayGate live keys + ITN
+signature verification) · `lib/email.ts` (→ SMTP/Resend/Postmark) · `lib/auth.ts` (→
 per-user accounts + 2FA). None require an external account to run today.

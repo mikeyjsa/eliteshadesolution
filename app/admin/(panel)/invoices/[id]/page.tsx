@@ -23,7 +23,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       </AdminHead>
       <ViewTracker quoteId={quote.id} type={`Invoice ${invoice.number}`} />
       <div style={{ padding: 28 }}>
-        <InvoiceDetail invoice={invoice} quote={quote} customer={customer} />
+        <InvoiceDetail invoice={invoice} quote={quote} customer={customer} settings={db.settings} />
       </div>
     </>
   );

@@ -7,12 +7,14 @@ export default function PayOptions({
   invoiceId,
   invoiceNumber,
   eftDetails,
+  allowGateway,
 }: {
   invoiceId: string;
   invoiceNumber: string;
   eftDetails: string;
+  allowGateway: boolean;
 }) {
-  const [method, setMethod] = useState<"payfast" | "eft">("payfast");
+  const [method, setMethod] = useState<"payfast" | "eft">(allowGateway ? "payfast" : "eft");
   const [copied, setCopied] = useState(false);
 
   const eftLines = eftDetails.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -27,29 +29,30 @@ export default function PayOptions({
 
   return (
     <div>
-      {/* method tabs */}
-      <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1.5px solid var(--color-line)", marginBottom: 16 }}>
-        {([
-          { key: "payfast" as const, label: "Card / PayFast" },
-          { key: "eft" as const, label: "Direct EFT" },
-        ]).map((m) => (
-          <button
-            key={m.key}
-            onClick={() => setMethod(m.key)}
-            style={{
-              flex: 1, padding: "11px 8px", border: "none", cursor: "pointer",
-              fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13,
-              background: method === m.key ? "var(--color-navy)" : "#fff",
-              color: method === m.key ? "#fff" : "var(--color-steel)",
-              transition: "background .2s, color .2s",
-            }}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      {allowGateway && (
+        <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1.5px solid var(--color-line)", marginBottom: 16 }}>
+          {([
+            { key: "payfast" as const, label: "Card / PayFast" },
+            { key: "eft" as const, label: "Direct EFT" },
+          ]).map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMethod(m.key)}
+              style={{
+                flex: 1, padding: "11px 8px", border: "none", cursor: "pointer",
+                fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13,
+                background: method === m.key ? "var(--color-navy)" : "#fff",
+                color: method === m.key ? "#fff" : "var(--color-steel)",
+                transition: "background .2s, color .2s",
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {method === "payfast" ? (
+      {allowGateway && method === "payfast" ? (
         <>
           <PayButton invoiceId={invoiceId} />
           <p style={{ fontSize: 11, color: "var(--color-silver)", textAlign: "center", marginTop: 12, marginBottom: 0 }}>
@@ -82,7 +85,7 @@ export default function PayOptions({
             {copied ? "✓ Copied" : "Copy bank details"}
           </button>
           <p style={{ fontSize: 12, color: "var(--color-steel)", lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
-            Use <b>{invoiceNumber}</b> as your payment reference, then email your proof of
+            Use <b>{invoiceNumber}</b> as your payment reference, then send your proof of
             payment to speed up confirmation. Your install date is booked as soon as the
             deposit reflects.
           </p>

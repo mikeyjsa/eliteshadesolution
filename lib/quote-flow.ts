@@ -6,7 +6,7 @@ import { getDB, mutate, uid } from "./db";
 import { sendEmail } from "./email";
 import { zar } from "./format";
 import { quoteNumber } from "./pdf";
-import { eftDetails } from "./site";
+import { eftDetails, gatewayEnabled, paymentOptionsSentence } from "./site";
 import type { Invoice, Quote } from "./types";
 
 // Generate (once) and return the unguessable public token for a quote.
@@ -32,13 +32,14 @@ export async function sendQuoteEmail(quote: Quote, origin: string): Promise<void
   const url = quoteUrl(origin, quote.public_token);
   const total = zar(quote.final_total);
   const deposit = zar(Math.round(quote.final_total * db.settings.deposit_pct / 100));
+  const paymentSentence = paymentOptionsSentence(db.settings);
 
   const body = [
     `Hi ${customer.name},`,
     ``,
     `Good news — your Elite Shade quote ${quoteNumber(quote)} is confirmed at ${total} (excl VAT).`,
     ``,
-    `View the full breakdown, download your quote as a PDF, and accept it online at the link below. Once you accept, we'll email your ${db.settings.deposit_pct}% deposit invoice (${deposit}) with secure payment options — PayFast card payment or EFT.`,
+    `View the full breakdown, download your quote as a PDF, and accept it online at the link below. Once you accept, we'll email your ${db.settings.deposit_pct}% deposit invoice (${deposit}) with secure payment options — ${paymentSentence}.`,
     ``,
     `Your quote is valid for 14 days. Nothing is booked until you accept, and the final scope is always confirmed at your free site survey.`,
   ].join("\n");
@@ -61,12 +62,13 @@ export async function sendQuoteEmail(quote: Quote, origin: string): Promise<void
   });
 }
 
-// Email the client their deposit invoice with PayFast + EFT payment options.
+// Email the client their deposit invoice with the currently enabled payment options.
 export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, origin: string): Promise<void> {
   const db = await getDB();
   const customer = db.customers.find((c) => c.id === quote.customer_id);
   if (!customer) return;
 
+  const allowGateway = gatewayEnabled(db.settings);
   const payUrl = `${origin}/pay/${invoice.id}`;
   const pdfUrl = `${origin}/api/invoices/${invoice.id}/pdf`;
   const eft = eftDetails(db.settings);
@@ -78,11 +80,9 @@ export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, or
     ``,
     `Download your invoice: ${pdfUrl}`,
     ``,
-    `You can pay in whichever way suits you:`,
+    allowGateway ? `You can pay in whichever way suits you:` : `Please pay by EFT to:`,
     ``,
-    `1. PayFast (card / instant EFT) — use the secure payment button below.`,
-    ``,
-    `2. Direct EFT — pay to:`,
+    ...(allowGateway ? [`1. PayFast (card / instant EFT) — use the secure payment button below.`, ``, `2. Direct EFT — pay to:`] : []),
     ...eft.split("\n"),
     `Reference: ${invoice.number}`,
     ``,
@@ -90,7 +90,7 @@ export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, or
   ].join("\n");
 
   await sendEmail(customer.email, `Deposit invoice ${invoice.number} — secure your install date`, body, {
-    label: `Pay ${zar(invoice.amount)} deposit securely`,
+    label: allowGateway ? `Pay ${zar(invoice.amount)} deposit securely` : `View payment instructions`,
     url: payUrl,
   });
 
@@ -101,7 +101,7 @@ export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, or
       user: "system",
       user_id: "system",
       type: "email",
-      message: `Deposit invoice ${invoice.number} emailed to ${customer.email} with PayFast + EFT payment options.`,
+      message: `Deposit invoice ${invoice.number} emailed to ${customer.email} with ${allowGateway ? "PayFast + EFT" : "EFT-only"} payment options.`,
       created_at: new Date().toISOString(),
     });
   });

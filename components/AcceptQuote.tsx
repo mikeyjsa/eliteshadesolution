@@ -10,11 +10,15 @@ export default function AcceptQuote({
   accepted,
   depositAmount,
   invoiceId,
+  paymentLabel,
+  paymentSentence,
 }: {
   token: string;
   accepted: boolean;
   depositAmount: number;
   invoiceId: string | null;
+  paymentLabel: string;
+  paymentSentence: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -45,7 +49,7 @@ export default function AcceptQuote({
         </div>
         <p style={{ margin: "8px 0 14px", fontSize: 14, color: "#2c5a3e", lineHeight: 1.6 }}>
           Your {zar(depositAmount)} deposit invoice has been emailed to you with payment
-          options (PayFast or EFT). Your install date is confirmed once the deposit reflects.
+          options ({paymentLabel}). Your install date is confirmed once the deposit reflects.
         </p>
         {payId && (
           <a href={`/pay/${payId}`} className="btn-brass" style={{ display: "inline-block", fontSize: 14.5 }}>
@@ -64,7 +68,7 @@ export default function AcceptQuote({
       {error && <p style={{ color: "#a23c34", fontSize: 13, marginTop: 8 }}>{error}</p>}
       <p style={{ fontSize: 12.5, color: "var(--color-steel)", marginTop: 10, lineHeight: 1.6 }}>
         Accepting generates your {zar(depositAmount)} deposit invoice and emails it to you
-        with secure payment options — PayFast card payment or direct EFT. No money moves yet.
+        with secure payment options — {paymentSentence}. No money moves yet.
       </p>
     </div>
   );

@@ -5,7 +5,7 @@ import path from "path";
 import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
 import type { Invoice, Quote, Customer, Settings } from "./types";
 import { zar } from "./format";
-import { eftDetails } from "./site";
+import { eftDetails, gatewayEnabled } from "./site";
 
 const NAVY   = rgb(0.157, 0.216, 0.275);   // #283746
 const BRASS  = rgb(0.788, 0.635, 0.294);   // #c9a24b
@@ -221,6 +221,7 @@ export async function invoicePDF(
 
   // ── HOW TO PAY PANEL (unpaid invoices only) ─────────────────────────────
   if (invoice.status !== "paid") {
+    const allowGateway = gatewayEnabled(settings);
     const eftLines = eftDetails(settings).split("\n").map((l) => l.trim()).filter(Boolean);
     const panelH = 66 + eftLines.length * 12 + (payUrl ? 24 : 0);
     const panelTop = Math.min(y - 40, 120 + panelH);
@@ -229,7 +230,7 @@ export async function invoicePDF(
     let py = panelTop;
     t("HOW TO PAY", 56, py, 9, bold, NAVY);
     py -= 16;
-    if (payUrl) {
+    if (allowGateway && payUrl) {
       t("1.  PayFast (card / instant EFT) — pay securely online:", 56, py, 9, font, INK);
       py -= 13;
       t(payUrl, 72, py, 9, bold, NAVY);

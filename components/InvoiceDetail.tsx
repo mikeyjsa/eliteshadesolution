@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zar, dateZA } from "@/lib/format";
-import type { Invoice, Quote, Customer } from "@/lib/types";
+import { gatewayEnabled } from "@/lib/site";
+import type { Invoice, Quote, Customer, Settings } from "@/lib/types";
 
-export default function InvoiceDetail({ invoice, quote, customer }: { invoice: Invoice; quote: Quote; customer: Customer }) {
+export default function InvoiceDetail({ invoice, quote, customer, settings }: { invoice: Invoice; quote: Quote; customer: Customer; settings: Settings }) {
   const router = useRouter();
   const [amount, setAmount] = useState(invoice.amount);
   const [type, setType] = useState(invoice.type);
@@ -17,6 +18,7 @@ export default function InvoiceDetail({ invoice, quote, customer }: { invoice: I
 
   const items = quote.final_line_items ?? quote.line_items;
   const priceLocked = quote.final_total != null;
+  const allowGateway = gatewayEnabled(settings);
 
   async function toDataUrl(file: File) {
     return await new Promise<string>((resolve, reject) => {
@@ -128,9 +130,9 @@ export default function InvoiceDetail({ invoice, quote, customer }: { invoice: I
         </div>
         {invoice.status === "unpaid" && (
           <div style={card}>
-            <h3 className="display" style={{ fontSize: 16, color: "var(--color-navy)", marginBottom: 8 }}>Take payment</h3>
-            <p style={{ fontSize: 13, color: "var(--color-steel)", marginTop: 0 }}>Send the customer the PayFast link, or open it to simulate.</p>
-            <a href={`/pay/${invoice.id}`} target="_blank" rel="noreferrer" className="btn-brass" style={{ display: "block", textAlign: "center" }}>Open PayFast page →</a>
+            <h3 className="display" style={{ fontSize: 16, color: "var(--color-navy)", marginBottom: 8 }}>{allowGateway ? "Take payment" : "Share EFT payment page"}</h3>
+            <p style={{ fontSize: 13, color: "var(--color-steel)", marginTop: 0 }}>{allowGateway ? "Send the customer the PayFast link, or open it to simulate." : "Open the customer payment page to show bank details and invoice reference."}</p>
+            <a href={`/pay/${invoice.id}`} target="_blank" rel="noreferrer" className="btn-brass" style={{ display: "block", textAlign: "center" }}>{allowGateway ? "Open PayFast page →" : "Open EFT payment page →"}</a>
           </div>
         )}
       </div>

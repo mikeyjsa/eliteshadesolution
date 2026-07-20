@@ -15,3 +15,19 @@ export const DEFAULT_EFT_DETAILS =
 export function eftDetails(settings: { eft_details?: string }): string {
   return settings.eft_details?.trim() || DEFAULT_EFT_DETAILS;
 }
+
+export function paymentMode(settings: { payment_mode?: "payfast_and_eft" | "eft_only" }) {
+  return settings.payment_mode === "eft_only" ? "eft_only" : "payfast_and_eft";
+}
+
+export function gatewayEnabled(settings: { payment_mode?: "payfast_and_eft" | "eft_only" }) {
+  return paymentMode(settings) === "payfast_and_eft";
+}
+
+export function paymentOptionsLabel(settings: { payment_mode?: "payfast_and_eft" | "eft_only" }) {
+  return gatewayEnabled(settings) ? "PayFast or EFT" : "EFT";
+}
+
+export function paymentOptionsSentence(settings: { payment_mode?: "payfast_and_eft" | "eft_only" }) {
+  return gatewayEnabled(settings) ? "PayFast card payment or direct EFT" : "direct EFT";
+}

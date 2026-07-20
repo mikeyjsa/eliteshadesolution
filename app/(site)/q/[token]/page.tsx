@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getDB } from "@/lib/db";
 import { zar } from "@/lib/format";
 import { quoteNumber } from "@/lib/pdf";
+import { paymentOptionsLabel, paymentOptionsSentence } from "@/lib/site";
 import AcceptQuote from "@/components/AcceptQuote";
 
 export const dynamic = "force-dynamic";
@@ -108,6 +109,8 @@ export default async function ClientQuotePage({ params }: { params: Promise<{ to
               accepted={accepted}
               depositAmount={depositAmount}
               invoiceId={depositInvoice?.id ?? null}
+              paymentLabel={paymentOptionsLabel(db.settings)}
+              paymentSentence={paymentOptionsSentence(db.settings)}
             />
           </div>
         </div>

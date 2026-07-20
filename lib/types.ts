@@ -145,7 +145,14 @@ export interface Settings {
   vat_number: string;
   vat_enabled: boolean;
   deposit_pct: number;
+  payment_mode?: "payfast_and_eft" | "eft_only";
   email_from: string;
+  email_provider?: "outbox" | "resend" | "smtp";
+  smtp_host?: string;
+  smtp_port?: number;
+  smtp_secure?: boolean;
+  smtp_user?: string;
+  smtp_pass?: string;
   whatsapp: string;
   facebook_url: string;
   instagram_url: string;
@@ -163,7 +170,7 @@ export interface EmailLog {
   body: string;
   html?: string;
   sent_at: string;
-  channel: "resend" | "outbox";
+  channel: "resend" | "smtp" | "outbox";
   status: "sent" | "queued" | "failed";
 }
 

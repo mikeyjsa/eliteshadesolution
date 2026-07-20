@@ -107,11 +107,37 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
   const from = db.settings.email_from || "quotes@eliteshadesolutions.co.za";
   const fromName = db.settings.company_name || "Elite Shade Solutions";
   const html = buildHtml(subject, body, fromName, cta);
+  const provider = db.settings.email_provider || (key ? "resend" : "outbox");
 
   let channel: EmailLog["channel"] = "outbox";
   let status: EmailLog["status"] = "queued";
 
-  if (key) {
+  if (provider === "smtp" && db.settings.smtp_host && db.settings.smtp_user) {
+    try {
+      const nodemailer = await import("nodemailer");
+      const transporter = nodemailer.createTransport({
+        host: db.settings.smtp_host,
+        port: db.settings.smtp_port || 587,
+        secure: !!db.settings.smtp_secure,
+        auth: {
+          user: db.settings.smtp_user,
+          pass: db.settings.smtp_pass || "",
+        },
+      });
+      await transporter.sendMail({
+        from: `${fromName} <${from}>`,
+        to,
+        subject,
+        text: body,
+        html,
+      });
+      channel = "smtp";
+      status = "sent";
+    } catch {
+      channel = "smtp";
+      status = "failed";
+    }
+  } else if (provider === "resend" && key) {
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
