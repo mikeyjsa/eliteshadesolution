@@ -135,8 +135,8 @@ If your host provides cPanel's Node.js Application Manager, this app can also ru
 Recommended deployment mode for Afrihost/cPanel:
 
 - Build locally with `npm run build:cpanel`
-- Upload `cpanel-deploy.tar.gz` into the live app root
-- Extract it over the existing app files
+- For manual deploys, upload `cpanel-deploy.tar.gz` into the live app root and extract it there
+- For Git deploys, commit the refreshed `cpanel-git-deploy.tar.gz` archive and let cPanel deploy from Git
 - Keep `.data/` in place
 - Set the startup file to `server.js`
 
@@ -144,7 +144,7 @@ Why this is recommended:
 
 - shared hosting build memory can be unreliable for `next build`
 - the standalone build carries the exact runtime needed for the compiled app
-- deploys become a repeatable upload + extract + restart flow without touching live data
+- deploys become a repeatable upload or Git publish flow without touching live data
 
 Recommended application settings:
 
@@ -200,7 +200,7 @@ ELITE_DB_PASSPHRASE=use-a-long-random-secret
 
 6. Restart the application from cPanel after changes.
 
-Ongoing deploy flow:
+Ongoing deploy flow: manual archive upload
 
 1. Push to GitHub.
 2. Build locally with `npm run build:cpanel`.
@@ -209,13 +209,31 @@ Ongoing deploy flow:
 5. Restart the Node.js application from cPanel.
 6. If you also keep a clean repository in `/home/<cpanel-user>/repositories/elite-shade`, pull that repo separately for source tracking, but do not depend on cPanel Git deployment alone for the live Next.js runtime unless the host can reliably build the app on-server.
 
+Ongoing deploy flow: cPanel Git deployment
+
+1. Build locally with `npm run build:cpanel`.
+2. Confirm `cpanel-git-deploy.tar.gz` has been regenerated.
+3. Commit both your source changes and the refreshed `cpanel-git-deploy.tar.gz`.
+4. Push to GitHub.
+5. In cPanel Git Version Control, deploy the latest commit.
+
+What the included Git deploy hook now does:
+
+- checks that `cpanel-git-deploy.tar.gz` exists in the repository
+- extracts it into a temporary folder under `public_html/www/tmp/`
+- `rsync --delete`s the extracted standalone runtime into the live app root
+- preserves `.data/`
+- touches `tmp/restart.txt` so Passenger reloads the app
+
+This means Git deploys no longer rely on `npm install` or `next build` running successfully on Afrihost.
+
 Important:
 
 - The writable `.data/` folder must exist in the application root.
 - Uploaded files, the JSON database, and backups all live under `.data/`.
 - The included `.cpanel.yml` explicitly preserves `.data/`.
-- If your host disables shell access, Git deployment can still work as long as the repository is clean and `.cpanel.yml` is present.
-- If your host cannot complete `next build` reliably on-server, build locally first when needed and avoid deleting the live `node_modules` and `.next` until the replacement artifacts are ready.
+- If your host disables shell access, Git deployment can still work as long as the repository is clean, `.cpanel.yml` is present, and the latest `cpanel-git-deploy.tar.gz` is committed.
+- When you change the app, always rerun `npm run build:cpanel` before pushing if you want cPanel Git deploy to publish the latest runtime.
 
 ### Git deploy flow
 

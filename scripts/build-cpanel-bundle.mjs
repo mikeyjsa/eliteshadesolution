@@ -9,6 +9,7 @@ const staticDir = path.join(root, ".next", "static");
 const publicDir = path.join(root, "public");
 const outDir = path.join(root, "cpanel-deploy");
 const archivePath = path.join(root, "cpanel-deploy.tar.gz");
+const gitArchivePath = path.join(root, "cpanel-git-deploy.tar.gz");
 
 if (!existsSync(standaloneDir)) {
   throw new Error("Missing .next/standalone. Run a standalone production build first.");
@@ -16,6 +17,7 @@ if (!existsSync(standaloneDir)) {
 
 await rm(outDir, { recursive: true, force: true });
 await rm(archivePath, { force: true });
+await rm(gitArchivePath, { force: true });
 await mkdir(outDir, { recursive: true });
 
 await cp(standaloneDir, outDir, { recursive: true });
@@ -48,7 +50,13 @@ await writeFile(
   "utf8"
 );
 
-execFileSync("tar", ["-czf", archivePath, "-C", outDir, "."], { stdio: "inherit" });
+function createArchive(destination) {
+  execFileSync("tar", ["-czf", destination, "-C", outDir, "."], { stdio: "inherit" });
+}
+
+createArchive(archivePath);
+createArchive(gitArchivePath);
 
 console.log(`Created ${path.relative(root, outDir)}`);
 console.log(`Created ${path.relative(root, archivePath)}`);
+console.log(`Created ${path.relative(root, gitArchivePath)}`);

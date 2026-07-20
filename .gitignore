@@ -13,3 +13,4 @@ next-env.d.ts
 /playwright/.cache
 /cpanel-deploy
 /cpanel-deploy.tar.gz
+/cpanel-git-deploy

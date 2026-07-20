@@ -3,8 +3,14 @@ deployment:
   tasks:
     - export REPOPATH=$PWD
     - export DEPLOYPATH=/home/elitesi8c1n5/public_html/www
+    - export RELEASEPATH="$DEPLOYPATH/tmp/cpanel-git-release"
     - /bin/mkdir -p "$DEPLOYPATH"
     - /bin/mkdir -p "$DEPLOYPATH/.data"
-    - /usr/bin/rsync -a --delete --exclude='.git' --exclude='.cpanel.yml' --exclude='.data' --exclude='.env' --exclude='.env.*' --exclude='.DS_Store' --exclude='playwright-report' --exclude='test-results' --exclude='tests' --exclude='tmp' "$REPOPATH/" "$DEPLOYPATH/"
     - /bin/mkdir -p "$DEPLOYPATH/tmp"
+    - test -f "$REPOPATH/cpanel-git-deploy.tar.gz" || { echo "Missing cpanel-git-deploy.tar.gz. Run npm run build:cpanel and commit the updated archive before deploying."; exit 1; }
+    - /bin/rm -rf "$RELEASEPATH"
+    - /bin/mkdir -p "$RELEASEPATH"
+    - /usr/bin/tar -xzf "$REPOPATH/cpanel-git-deploy.tar.gz" -C "$RELEASEPATH"
+    - /usr/bin/rsync -a --delete --exclude='.data' --exclude='tmp' "$RELEASEPATH/" "$DEPLOYPATH/"
+    - /bin/rm -rf "$RELEASEPATH"
     - /usr/bin/touch "$DEPLOYPATH/tmp/restart.txt"
