@@ -119,13 +119,27 @@ falls back to `4700` locally.
 
 If your host provides cPanel's Node.js Application Manager, this app can also run there as a normal Node deployment instead of as a static export.
 
+Recommended deployment mode for Afrihost/cPanel:
+
+- Build locally with `npm run build:cpanel`
+- Upload `cpanel-deploy.tar.gz` into the live app root
+- Extract it over the existing app files
+- Keep `.data/` in place
+- Set the startup file to `server.js`
+
+Why this is recommended:
+
+- shared hosting build memory can be unreliable for `next build`
+- the standalone build carries the exact runtime needed for the compiled app
+- deploys become a repeatable upload + extract + restart flow without touching live data
+
 Recommended application settings:
 
 - Node.js version: `24.x` if available, otherwise the newest supported LTS version
 - Application mode: `Production`
 - Application root: `/home/<cpanel-user>/public_html/www`
 - Application URL: `/` for the main site, or a subdomain path if you deploy it separately
-- Application startup file: `app.js`
+- Application startup file: `server.js` for standalone bundles, or `app.js` only for source-based local/server builds
 
 Recommended Git layout:
 
@@ -176,10 +190,11 @@ ELITE_DB_PASSPHRASE=use-a-long-random-secret
 Ongoing deploy flow:
 
 1. Push to GitHub.
-2. In cPanel Git Version Control, pull/update the clean repository in `/home/<cpanel-user>/repositories/elite-shade`.
-3. Run `Deploy HEAD Commit`.
-4. cPanel runs `.cpanel.yml`, syncs files into `/home/<cpanel-user>/public_html/www`, and touches `tmp/restart.txt`.
-5. The live app restarts without replacing `.data/`.
+2. Build locally with `npm run build:cpanel`.
+3. Upload `cpanel-deploy.tar.gz` to `/home/<cpanel-user>/public_html/www`.
+4. Extract it into the live app root and confirm `.data/` remains untouched.
+5. Restart the Node.js application from cPanel.
+6. If you also keep a clean repository in `/home/<cpanel-user>/repositories/elite-shade`, pull that repo separately for source tracking, but do not depend on cPanel Git deployment alone for the live Next.js runtime unless the host can reliably build the app on-server.
 
 Important:
 
