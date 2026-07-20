@@ -22,6 +22,24 @@ interface EmailFooterContact {
   infoEmail: string;
 }
 
+function envString(name: string) {
+  const value = process.env[name]?.trim();
+  return value ? value : "";
+}
+
+function envBool(name: string) {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) return undefined;
+  return value === "1" || value === "true" || value === "yes" || value === "on";
+}
+
+function envNumber(name: string) {
+  const raw = process.env[name]?.trim();
+  if (!raw) return undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 // Branded HTML email template — table-based for email client compat.
 export function buildHtml(
   subject: string,
@@ -131,8 +149,8 @@ export function buildHtml(
 
 export async function sendEmail(to: string, subject: string, body: string, cta?: EmailCta): Promise<EmailLog> {
   const db = await getDB();
-  const key = db.settings.resend_api_key?.trim();
-  const from = db.settings.email_from || "sales@eliteshadesolutions.co.za";
+  const key = envString("ELITE_RESEND_API_KEY") || db.settings.resend_api_key?.trim();
+  const from = envString("ELITE_EMAIL_FROM") || db.settings.email_from || "sales@eliteshadesolutions.co.za";
   const fromName = db.settings.company_name || "Elite Shade Solutions";
   const html = buildHtml(subject, body, fromName, from, {
     salesName: db.settings.sales_name || "Jean-Pierre Miller",
@@ -142,21 +160,29 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
     salesEmail: db.settings.sales_email || from,
     infoEmail: db.settings.info_email || "info@eliteshadesolutions.co.za",
   }, cta);
-  const provider = db.settings.email_provider || (key ? "resend" : "outbox");
+  const smtpHost = envString("ELITE_SMTP_HOST") || db.settings.smtp_host || "";
+  const smtpPort = envNumber("ELITE_SMTP_PORT") || db.settings.smtp_port || 587;
+  const smtpUser = envString("ELITE_SMTP_USER") || db.settings.smtp_user || "";
+  const smtpPass = envString("ELITE_SMTP_PASS") || db.settings.smtp_pass || "";
+  const smtpSecure = envBool("ELITE_SMTP_SECURE") ?? !!db.settings.smtp_secure;
+  const envProvider = envString("ELITE_EMAIL_PROVIDER");
+  const provider = (envProvider === "smtp" || envProvider === "resend" || envProvider === "outbox")
+    ? envProvider
+    : (db.settings.email_provider || (key ? "resend" : "outbox"));
 
   let channel: EmailLog["channel"] = "outbox";
   let status: EmailLog["status"] = "queued";
 
-  if (provider === "smtp" && db.settings.smtp_host && db.settings.smtp_user) {
+  if (provider === "smtp" && smtpHost && smtpUser) {
     try {
       const nodemailer = await import("nodemailer");
       const transporter = nodemailer.createTransport({
-        host: db.settings.smtp_host,
-        port: db.settings.smtp_port || 587,
-        secure: !!db.settings.smtp_secure,
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
         auth: {
-          user: db.settings.smtp_user,
-          pass: db.settings.smtp_pass || "",
+          user: smtpUser,
+          pass: smtpPass,
         },
       });
       await transporter.sendMail({

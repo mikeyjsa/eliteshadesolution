@@ -84,11 +84,24 @@ NEXT_PUBLIC_SITE_URL=https://your-public-domain.com
 ELITE_DB_PASSPHRASE=use-a-long-random-secret
 ```
 
+Optional live email overrides:
+
+```bash
+ELITE_EMAIL_PROVIDER=smtp
+ELITE_EMAIL_FROM=sales@your-domain.co.za
+ELITE_SMTP_HOST=mail.your-domain.co.za
+ELITE_SMTP_PORT=465
+ELITE_SMTP_SECURE=true
+ELITE_SMTP_USER=sales@your-domain.co.za
+ELITE_SMTP_PASS=your-mailbox-password
+```
+
 Recommended:
 
 - Use a long random `ELITE_DB_PASSPHRASE` and keep it stable. Changing it later without re-encrypting data will prevent the app from reading existing encrypted DB/backup files.
 - Set your final custom domain in `NEXT_PUBLIC_SITE_URL` so canonicals, sitemap, robots, and social cards point at the correct host.
 - If you plan to use SMTP from your hosting provider, keep the mailbox credentials ready for the in-app Settings screen. They are not required as environment variables.
+- For production shared-hosting deployments, environment variables can override the in-app email settings so live mail keeps working even if the runtime DB has older values.
 
 ### Required persistent volume
 
