@@ -36,6 +36,24 @@ export interface GoogleAnalyticsDashboard {
     count: number;
     users: number;
   }>;
+  geography?: GoogleAnalyticsGeography;
+}
+
+export interface GoogleAnalyticsArea {
+  name: string;
+  activeUsers: number;
+  sessions: number;
+  views: number;
+  devices: Record<string, number>;
+}
+
+export interface GoogleAnalyticsGeography {
+  activeUsers: number;
+  sessions: number;
+  views: number;
+  devices: Record<string, number>;
+  regions: GoogleAnalyticsArea[];
+  cities: Array<GoogleAnalyticsArea & { region: string }>;
 }
 
 function metricNumber(value?: string | null): number {
@@ -49,6 +67,11 @@ function normalizePrivateKey(key: string): string {
 
 function cleanValue(value?: string | null): string {
   return value?.trim() || "";
+}
+
+function addDevice(target: Record<string, number>, device: string, users: number) {
+  const key = device.trim().toLowerCase() || "other";
+  target[key] = (target[key] || 0) + users;
 }
 
 export function hasGoogleAnalyticsReporting(settings: Settings): boolean {
@@ -88,54 +111,122 @@ export async function getGoogleAnalyticsDashboard(
 
     const property = `properties/${propertyId}`;
 
-    const [batch] = await client.batchRunReports({
-      property,
-      requests: [
-        {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          metrics: [
-            { name: "activeUsers" },
-            { name: "newUsers" },
-            { name: "sessions" },
-            { name: "screenPageViews" },
-            { name: "engagedSessions" },
-            { name: "engagementRate" },
-            { name: "bounceRate" },
-            { name: "averageSessionDuration" },
-            { name: "eventCount" },
-          ],
-        },
-        {
-          dateRanges: [{ startDate: "7daysAgo", endDate: "today" }],
-          metrics: [{ name: "activeUsers" }],
-        },
-        {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          dimensions: [{ name: "pageTitle" }, { name: "pagePath" }],
-          metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
-          orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
-          limit: 8,
-        },
-        {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          dimensions: [{ name: "sessionDefaultChannelGroup" }],
-          metrics: [
-            { name: "sessions" },
-            { name: "activeUsers" },
-            { name: "engagedSessions" },
-          ],
-          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-          limit: 8,
-        },
-        {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          dimensions: [{ name: "eventName" }],
-          metrics: [{ name: "eventCount" }, { name: "totalUsers" }],
-          orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
-          limit: 10,
-        },
-      ],
-    });
+    const [[batch], [geographyBatch]] = await Promise.all([
+      client.batchRunReports({
+        property,
+        requests: [
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            metrics: [
+              { name: "activeUsers" },
+              { name: "newUsers" },
+              { name: "sessions" },
+              { name: "screenPageViews" },
+              { name: "engagedSessions" },
+              { name: "engagementRate" },
+              { name: "bounceRate" },
+              { name: "averageSessionDuration" },
+              { name: "eventCount" },
+            ],
+          },
+          {
+            dateRanges: [{ startDate: "7daysAgo", endDate: "today" }],
+            metrics: [{ name: "activeUsers" }],
+          },
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "pageTitle" }, { name: "pagePath" }],
+            metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+            orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+            limit: 8,
+          },
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "sessionDefaultChannelGroup" }],
+            metrics: [
+              { name: "sessions" },
+              { name: "activeUsers" },
+              { name: "engagedSessions" },
+            ],
+            orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+            limit: 8,
+          },
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "eventName" }],
+            metrics: [{ name: "eventCount" }, { name: "totalUsers" }],
+            orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+            limit: 10,
+          },
+        ],
+      }),
+      client.batchRunReports({
+        property,
+        requests: [
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            metrics: [
+              { name: "activeUsers" },
+              { name: "sessions" },
+              { name: "screenPageViews" },
+            ],
+            dimensionFilter: {
+              filter: {
+                fieldName: "country",
+                stringFilter: { matchType: "EXACT", value: "South Africa" },
+              },
+            },
+          },
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "region" }],
+            metrics: [
+              { name: "activeUsers" },
+              { name: "sessions" },
+              { name: "screenPageViews" },
+            ],
+            dimensionFilter: {
+              filter: {
+                fieldName: "country",
+                stringFilter: { matchType: "EXACT", value: "South Africa" },
+              },
+            },
+            orderBys: [{ metric: { metricName: "activeUsers" }, desc: true }],
+            limit: 20,
+          },
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "region" }, { name: "deviceCategory" }],
+            metrics: [{ name: "activeUsers" }],
+            dimensionFilter: {
+              filter: {
+                fieldName: "country",
+                stringFilter: { matchType: "EXACT", value: "South Africa" },
+              },
+            },
+            orderBys: [{ metric: { metricName: "activeUsers" }, desc: true }],
+            limit: 100,
+          },
+          {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "city" }, { name: "region" }],
+            metrics: [
+              { name: "activeUsers" },
+              { name: "sessions" },
+              { name: "screenPageViews" },
+            ],
+            dimensionFilter: {
+              filter: {
+                fieldName: "country",
+                stringFilter: { matchType: "EXACT", value: "South Africa" },
+              },
+            },
+            orderBys: [{ metric: { metricName: "activeUsers" }, desc: true }],
+            limit: 100,
+          },
+        ],
+      }),
+    ]);
 
     const reports = batch.reports ?? [];
     const overview30 = reports[0]?.rows?.[0];
@@ -143,6 +234,69 @@ export async function getGoogleAnalyticsDashboard(
     const topPagesRows = reports[2]?.rows ?? [];
     const channelRows = reports[3]?.rows ?? [];
     const eventRows = reports[4]?.rows ?? [];
+    const geographyReports = geographyBatch.reports ?? [];
+    const geographyOverview = geographyReports[0]?.rows?.[0];
+    const regionRows = geographyReports[1]?.rows ?? [];
+    const regionDeviceRows = geographyReports[2]?.rows ?? [];
+    const cityRows = geographyReports[3]?.rows ?? [];
+
+    const regionMap = new Map<string, GoogleAnalyticsArea>();
+    const cityMap = new Map<string, GoogleAnalyticsArea & { region: string }>();
+    const geography: GoogleAnalyticsGeography = {
+      activeUsers: metricNumber(geographyOverview?.metricValues?.[0]?.value),
+      sessions: metricNumber(geographyOverview?.metricValues?.[1]?.value),
+      views: metricNumber(geographyOverview?.metricValues?.[2]?.value),
+      devices: {},
+      regions: [],
+      cities: [],
+    };
+
+    for (const row of regionRows) {
+      const name = row.dimensionValues?.[0]?.value || "Unknown province";
+      const activeUsers = metricNumber(row.metricValues?.[0]?.value);
+      const sessions = metricNumber(row.metricValues?.[1]?.value);
+      const views = metricNumber(row.metricValues?.[2]?.value);
+      regionMap.set(name, {
+        name,
+        activeUsers,
+        sessions,
+        views,
+        devices: {},
+      });
+    }
+
+    for (const row of regionDeviceRows) {
+      const name = row.dimensionValues?.[0]?.value || "Unknown province";
+      const device = row.dimensionValues?.[1]?.value || "other";
+      const users = metricNumber(row.metricValues?.[0]?.value);
+      const area = regionMap.get(name);
+      if (area) addDevice(area.devices, device, users);
+      addDevice(geography.devices, device, users);
+    }
+
+    for (const row of cityRows) {
+      const name = row.dimensionValues?.[0]?.value || "Unknown city";
+      const region = row.dimensionValues?.[1]?.value || "Unknown province";
+      const activeUsers = metricNumber(row.metricValues?.[0]?.value);
+      const sessions = metricNumber(row.metricValues?.[1]?.value);
+      const views = metricNumber(row.metricValues?.[2]?.value);
+      const key = `${region}:${name}`;
+      cityMap.set(key, {
+        name,
+        region,
+        activeUsers,
+        sessions,
+        views,
+        devices: {},
+      });
+    }
+
+    geography.regions = [...regionMap.values()].sort(
+      (a, b) => b.activeUsers - a.activeUsers
+    );
+    geography.cities = [...cityMap.values()]
+      .sort((a, b) => b.activeUsers - a.activeUsers)
+      .slice(0, 20);
 
     return {
       configured: true,
@@ -187,6 +341,7 @@ export async function getGoogleAnalyticsDashboard(
         count: metricNumber(row.metricValues?.[0]?.value),
         users: metricNumber(row.metricValues?.[1]?.value),
       })),
+      geography,
     };
   } catch (error) {
     return {

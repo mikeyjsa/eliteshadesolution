@@ -4,6 +4,7 @@ import { zar } from "@/lib/format";
 import { STAGES } from "@/lib/types";
 import AdminHead from "@/components/AdminHead";
 import { getGoogleAnalyticsDashboard } from "@/lib/google-analytics";
+import SouthAfricaAudienceMap from "@/components/SouthAfricaAudienceMap";
 
 export const dynamic = "force-dynamic";
 
@@ -292,6 +293,41 @@ export default async function Reports({
                     <Stat k="CRM follow-up" v="Quotes, invoices, deposits, scheduling" />
                   </Panel>
                 </div>
+
+                {gaDashboard.geography && (
+                  <div style={{ marginBottom: 20 }}>
+                    <Panel title="Visitors across South Africa (last 30 days)">
+                      <SouthAfricaAudienceMap geography={gaDashboard.geography} />
+                    </Panel>
+                  </div>
+                )}
+
+                {gaDashboard.geography && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }} className="es-ga-grid">
+                    <Panel title="Top South African cities">
+                      <Table
+                        headers={["City", "Province", "Users", "Sessions"]}
+                        rows={gaDashboard.geography.cities.map((city) => [
+                          city.name,
+                          city.region,
+                          num(city.activeUsers),
+                          num(city.sessions),
+                        ])}
+                      />
+                    </Panel>
+                    <Panel title="Device use by province">
+                      <Table
+                        headers={["Province", "Mobile", "Desktop", "Tablet"]}
+                        rows={gaDashboard.geography.regions.map((region) => [
+                          region.name,
+                          num(region.devices.mobile || 0),
+                          num(region.devices.desktop || 0),
+                          num(region.devices.tablet || 0),
+                        ])}
+                      />
+                    </Panel>
+                  </div>
+                )}
               </>
             ) : null}
           </>
