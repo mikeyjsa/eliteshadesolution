@@ -7,6 +7,7 @@ const root = process.cwd();
 const standaloneDir = path.join(root, ".next", "standalone");
 const staticDir = path.join(root, ".next", "static");
 const publicDir = path.join(root, "public");
+const appLauncherPath = path.join(root, "app.js");
 const outDir = path.join(root, "cpanel-deploy");
 const archivePath = path.join(root, "cpanel-deploy.tar.gz");
 const gitArchivePath = path.join(root, "cpanel-git-deploy.tar.gz");
@@ -21,6 +22,9 @@ await rm(gitArchivePath, { force: true });
 await mkdir(outDir, { recursive: true });
 
 await cp(standaloneDir, outDir, { recursive: true });
+if (existsSync(appLauncherPath)) {
+  await cp(appLauncherPath, path.join(outDir, "app.js"));
+}
 await mkdir(path.join(outDir, ".next"), { recursive: true });
 await cp(staticDir, path.join(outDir, ".next", "static"), { recursive: true });
 await rm(path.join(outDir, ".data"), { recursive: true, force: true });
