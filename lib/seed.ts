@@ -8,6 +8,7 @@ import type {
   QuoteInputs,
   QuoteStage,
   AdminUser,
+  Team,
 } from "./types";
 import { calcQuote, ratesFromPricing } from "./quote-engine";
 
@@ -105,6 +106,11 @@ const LEADS: SeedLead[] = [
   { name: "L. Naidoo", email: "l.naidoo@example.co.za", phone: "083 555 6666", suburb: "Sea Point", source: "Google Ads", inputs: { length: 5.4, width: 5.4, shape: "square", range: "Extreme", poles: true, colour: "Silver" }, stage: "deposit_paid", final: 19800, days: 7, address: "22 Beach Rd, Sea Point, 8005" },
   { name: "P. Smit", email: "p.smit@example.co.za", phone: "084 666 7777", suburb: "Stellenbosch", source: "Referral", inputs: { length: 5, width: 3, shape: "rectangle", range: "Extreme", poles: true, colour: "Sand" }, stage: "scheduled", final: 14600, days: 10, address: "7 Dorp Str, Stellenbosch, 7600" },
   { name: "T. Mbeki", email: "t.mbeki@example.co.za", phone: "082 777 8888", suburb: "Bishopscourt", source: "Instagram", inputs: { length: 5, width: 5, shape: "square", range: "Standard", poles: true, colour: "Black" }, stage: "installed", final: 13200, days: 18, address: "15 Bishopscourt Dr, Claremont, 7708" },
+];
+
+const TEAMS: Team[] = [
+  { id: id("team_", 1), name: "Crew A", email: "", members: "Lead installer + assistant", active: true, created_at: isoDaysAgo(60) },
+  { id: id("team_", 2), name: "Crew B", email: "", members: "Overflow / second crew", active: true, created_at: isoDaysAgo(45) },
 ];
 
 const GALLERY: Partial<Content>[] = [
@@ -344,12 +350,15 @@ export function seedDB(): DB {
         quote_id: id("qte_", 6),
         scheduled_date: new Date(now + 6 * 86400000).toISOString().slice(0, 10),
         installer: "Crew A",
+        team_id: id("team_", 1),
         status: "pending",
         notes: "Stellenbosch — rectangle, 4 poles.",
       },
     ],
+    teams: TEAMS,
     pricing: PRICING,
     activities: [],
+    notifications: [],
     content,
     settings: SETTINGS,
     users,

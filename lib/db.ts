@@ -10,17 +10,27 @@ import { decryptStoredText, encryptStoredText, maybeMigrateEncryptedFile } from 
 let memo: DB | null = null;
 let writing: Promise<void> = Promise.resolve();
 
+function hydrate(db: DB): DB {
+  db.installations = (db.installations || []).map((installation) => ({
+    ...installation,
+    team_id: installation.team_id ?? null,
+  }));
+  db.teams ||= [];
+  db.notifications ||= [];
+  return db;
+}
+
 async function ensure(): Promise<DB> {
   if (memo) return memo;
   try {
     const raw = await fs.readFile(DB_FILE, "utf8");
-    memo = JSON.parse(decryptStoredText(raw)) as DB;
+    memo = hydrate(JSON.parse(decryptStoredText(raw)) as DB);
     await maybeMigrateEncryptedFile(
       () => fs.readFile(DB_FILE, "utf8"),
       (content) => fs.writeFile(DB_FILE, content, "utf8")
     );
   } catch {
-    memo = seedDB();
+    memo = hydrate(seedDB());
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(DB_FILE, encryptStoredText(JSON.stringify(memo, null, 2)), "utf8");
   }

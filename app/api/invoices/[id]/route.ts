@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, mutate, uid } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
+import { pushAdminNotification } from "@/lib/notifications";
 import { promises as fs } from "fs";
 import { zar } from "@/lib/format";
 import { PAYMENT_PROOFS_DIR } from "@/lib/storage-paths";
@@ -78,6 +79,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       user_id: actorId,
       type: body.status === "paid" || nextProofUrl || typeof body.payment_note === "string" ? "payment" : "invoice_edit",
       message: `${activityParts.join(" · ")}.`,
+      created_at: now,
+    });
+    pushAdminNotification(db, {
+      title: `Invoice updated — ${inv.number}`,
+      message: `${activityParts.join(" · ")}.`,
+      href: `/admin/invoices/${inv.id}`,
+      kind: "invoice",
+      quote_id: inv.quote_id,
       created_at: now,
     });
     return inv;

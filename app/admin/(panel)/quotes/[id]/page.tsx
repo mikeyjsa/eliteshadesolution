@@ -31,6 +31,8 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           customer={customer}
           invoices={invoices}
           activities={activities}
+          teams={db.teams.filter((team) => team.active)}
+          scheduledTeamId={install?.team_id ?? null}
           depositPct={db.settings.deposit_pct}
           scheduledDate={install?.scheduled_date ?? null}
           addOptions={db.pricing.map((p) => ({ label: p.label, amount: p.rate }))}

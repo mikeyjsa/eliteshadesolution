@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, mutate, uid } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { pushAdminNotification } from "@/lib/notifications";
 import { ensureQuoteToken, sendQuoteEmail } from "@/lib/quote-flow";
 import { STAGES, type QuoteInputs, type QuoteLineItem, type QuoteStage } from "@/lib/types";
 import { promises as fs } from "fs";
@@ -36,12 +37,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const result = await mutate((db) => {
     const q = db.quotes.find((x) => x.id === id);
     if (!q) return null;
+    const customer = db.customers.find((x) => x.id === q.customer_id);
     const pricingLocked = q.status === "scheduled" || q.status === "installed";
+    const notificationParts: string[] = [];
 
     if (body.status && body.status !== q.status) {
       const label = STAGES.find((s) => s.key === body.status)?.label ?? body.status;
       q.status = body.status as QuoteStage;
       db.activities.unshift({ id: uid("act_"), quote_id: id, user: actorName, user_id: actorId, type: "stage_change", message: `Moved to ${label}.`, created_at: now });
+      notificationParts.push(`stage moved to ${label}`);
     }
     if (typeof body.notes === "string") q.notes = body.notes;
 
@@ -67,6 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         message: `Estimate recalculated to R${q.estimate_low}–R${q.estimate_high} using ${q.net_label}.`,
         created_at: now,
       });
+      notificationParts.push(`estimate recalculated to R${q.estimate_low}–R${q.estimate_high}`);
     }
 
     if (!pricingLocked && Array.isArray(body.final_line_items)) {
@@ -74,6 +79,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       q.final_line_items = items;
       q.final_total = items.reduce((s: number, li: { amount: number }) => s + li.amount, 0);
       db.activities.unshift({ id: uid("act_"), quote_id: id, user: actorName, user_id: actorId, type: "price", message: `Firm price set to R${q.final_total} (${items.length} line items).`, created_at: now });
+      notificationParts.push(`firm price set at R${q.final_total}`);
     } else if (!pricingLocked && typeof body.final_total === "number") {
       q.final_total = body.final_total;
     }
@@ -81,9 +87,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (typeof body.archived === "boolean") {
       q.archived = body.archived;
       db.activities.unshift({ id: uid("act_"), quote_id: id, user: actorName, user_id: actorId, type: "archive", message: body.archived ? "Archived." : "Restored from archive.", created_at: now });
+      notificationParts.push(body.archived ? "lead archived" : "lead restored");
     }
     if (body.activity) {
       db.activities.unshift({ id: uid("act_"), quote_id: id, user: actorName, user_id: actorId, type: "note", message: body.activity, created_at: now });
+      notificationParts.push(`note added by ${actorName}`);
+    }
+    if (typeof body.address === "string") {
+      notificationParts.push("invoice address updated");
+    }
+    if (notificationParts.length) {
+      pushAdminNotification(db, {
+        title: `Lead updated — ${customer?.name ?? id.slice(0, 8)}`,
+        message: notificationParts.map((part, index) => `${index + 1}. ${part}`).join("\n"),
+        href: `/admin/quotes/${id}`,
+        kind: "lead",
+        quote_id: id,
+        created_at: now,
+      });
     }
     q.updated_at = now;
     return q;
@@ -111,9 +132,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const db = await getDB();
   const quote = db.quotes.find((item) => item.id === id);
   if (!quote) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!quote.archived) {
-    return NextResponse.json({ error: "Only archived leads can be deleted from the pipeline." }, { status: 400 });
-  }
 
   const proofUrls = db.invoices
     .filter((invoice) => invoice.quote_id === id)
@@ -127,6 +145,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     state.invoices = state.invoices.filter((invoice) => invoice.quote_id !== id);
     state.installations = state.installations.filter((installation) => installation.quote_id !== id);
     state.activities = state.activities.filter((activity) => activity.quote_id !== id);
+    state.notifications = state.notifications.filter((notification) => notification.quote_id !== id);
     state.quotes = state.quotes.filter((item) => item.id !== id);
 
     const stillReferenced = state.quotes.some((item) => item.customer_id === deletingQuote.customer_id);

@@ -3,6 +3,7 @@ import { getDB, mutate, uid } from "@/lib/db";
 import { calcQuote, ratesFromPricing } from "@/lib/quote-engine";
 import { sendEmail, render } from "@/lib/email";
 import { zar } from "@/lib/format";
+import { pushAdminNotification } from "@/lib/notifications";
 import { adminNotificationEmails } from "@/lib/site";
 import type { Customer, Quote, QuoteInputs } from "@/lib/types";
 
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
   const rates = ratesFromPricing(db.pricing);
   const r = calcQuote(inputs, rates);
   const adminInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
+  const colour = (inputs.colour as string) || "Charcoal";
 
   const now = new Date().toISOString();
   const customer: Customer = {
@@ -63,10 +65,17 @@ export async function POST(req: NextRequest) {
       message: `New quote captured from website — ${zar(r.low)}–${zar(r.high)} est.`,
       created_at: now,
     });
+    pushAdminNotification(d, {
+      title: "New website quote",
+      message: `${contact.name} requested an estimate for ${inputs.length}m × ${inputs.width}m in ${colour}. Range: ${zar(r.low)} – ${zar(r.high)}.`,
+      href: `/admin/quotes/${quote.id}`,
+      kind: "quote",
+      quote_id: quote.id,
+      created_at: now,
+    });
   });
 
   const tpl = db.settings.email_templates.estimate;
-  const colour = (inputs.colour as string) || "Charcoal";
   await sendEmail(
     contact.email,
     tpl.subject,

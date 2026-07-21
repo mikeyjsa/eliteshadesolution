@@ -106,8 +106,18 @@ export interface Installation {
   quote_id: string;
   scheduled_date: string;
   installer: string;
+  team_id?: string | null;
   status: "pending" | "done";
   notes: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  email: string;
+  members: string;
+  active: boolean;
+  created_at: string;
 }
 
 export interface PricingRate {
@@ -193,13 +203,26 @@ export interface EmailLog {
   status: "sent" | "queued" | "failed";
 }
 
+export interface AdminNotification {
+  id: string;
+  title: string;
+  message: string;
+  href: string;
+  kind: "lead" | "quote" | "schedule" | "invoice" | "system";
+  quote_id?: string;
+  read_at: string | null;
+  created_at: string;
+}
+
 export interface DB {
   customers: Customer[];
   quotes: Quote[];
   invoices: Invoice[];
   installations: Installation[];
+  teams: Team[];
   pricing: PricingRate[];
   activities: Activity[];
+  notifications: AdminNotification[];
   content: Content[];
   settings: Settings;
   users: AdminUser[];

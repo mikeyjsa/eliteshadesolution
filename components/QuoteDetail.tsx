@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zar } from "@/lib/format";
 import type { Rates } from "@/lib/quote-engine";
-import { STAGES, type Quote, type Customer, type Invoice, type Activity, type QuoteLineItem } from "@/lib/types";
+import { STAGES, type Quote, type Customer, type Invoice, type Activity, type QuoteLineItem, type Team } from "@/lib/types";
 import AdminShadeCalculator from "@/components/AdminShadeCalculator";
 
 export default function QuoteDetail({
@@ -11,6 +11,8 @@ export default function QuoteDetail({
   customer,
   invoices,
   activities,
+  teams,
+  scheduledTeamId,
   depositPct,
   scheduledDate,
   addOptions,
@@ -20,6 +22,8 @@ export default function QuoteDetail({
   customer: Customer;
   invoices: Invoice[];
   activities: Activity[];
+  teams: Team[];
+  scheduledTeamId: string | null;
   depositPct: number;
   scheduledDate: string | null;
   addOptions: QuoteLineItem[];
@@ -33,7 +37,7 @@ export default function QuoteDetail({
   const [addressSaved, setAddressSaved] = useState(false);
   const [note, setNote] = useState("");
   const [date, setDate] = useState(scheduledDate ?? "");
-  const [installer, setInstaller] = useState("Crew A");
+  const [teamId, setTeamId] = useState(scheduledTeamId ?? teams[0]?.id ?? "");
   const [busy, setBusy] = useState("");
   const [picker, setPicker] = useState("");
 
@@ -79,9 +83,9 @@ export default function QuoteDetail({
     else alert((await res.json()).error);
   }
   async function schedule() {
-    if (!date) return;
+    if (!date || !teamId) return;
     setBusy("schedule");
-    await fetch("/api/schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quoteId: quote.id, date, installer }) });
+    await fetch("/api/schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quoteId: quote.id, date, teamId }) });
     setBusy("");
     router.refresh();
   }
@@ -92,6 +96,18 @@ export default function QuoteDetail({
   }
   async function archive(v: boolean) {
     await patch({ archived: v }, "archive");
+  }
+  async function deleteLead() {
+    if (!confirm("Delete this quote or enquiry completely? This removes invoices, activity, schedule entries, and uploaded payment proofs too.")) return;
+    setBusy("delete");
+    const res = await fetch(`/api/leads/${quote.id}`, { method: "DELETE" });
+    setBusy("");
+    if (!res.ok) {
+      alert((await res.json()).error || "Could not delete this lead.");
+      return;
+    }
+    router.push("/admin/leads");
+    router.refresh();
   }
 
   const stageLabel = STAGES.find((s) => s.key === quote.status)?.label ?? quote.status;
@@ -282,12 +298,16 @@ export default function QuoteDetail({
           <h3 className="display" style={{ fontSize: 16, color: "var(--color-navy)", marginBottom: 4 }}>3 · Schedule install</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inp} />
-            <select value={installer} onChange={(e) => setInstaller(e.target.value)} style={inp}>
-              <option>Crew A</option><option>Crew B</option>
+            <select value={teamId} onChange={(e) => setTeamId(e.target.value)} style={inp}>
+              <option value="">Select a team…</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>{team.name}{team.email ? ` · ${team.email}` : ""}</option>
+              ))}
             </select>
-            <button className="btn-brass" onClick={schedule} disabled={busy === "schedule" || !date} style={{ padding: "9px", fontSize: 13 }}>
+            <button className="btn-brass" onClick={schedule} disabled={busy === "schedule" || !date || !teamId} style={{ padding: "9px", fontSize: 13 }}>
               {busy === "schedule" ? "…" : scheduleLocked ? "Install scheduled" : "Book & email customer"}
             </button>
+            {!teams.length && <p style={{ fontSize: 12.5, color: "var(--color-warn)", margin: 0 }}>Create a team first under Teams so assignments can email the right crew.</p>}
           </div>
         </div>
 
@@ -295,6 +315,9 @@ export default function QuoteDetail({
           <a href={`mailto:${customer.email}`} className="btn-ghost" style={{ flex: 1, textAlign: "center" }}>Email {customer.name.split(" ")[0]}</a>
           <button className="btn-ghost" onClick={() => archive(!quote.archived)} style={{ flex: 1 }} disabled={scheduleLocked}>{quote.archived ? "Restore" : "Archive"}</button>
         </div>
+        <button onClick={deleteLead} disabled={busy === "delete"} style={{ width: "100%", marginTop: 10, background: "#fff", border: "1px solid rgba(162,60,52,.25)", color: "#a23c34", borderRadius: 12, padding: "11px 14px", fontWeight: 800, cursor: "pointer" }}>
+          {busy === "delete" ? "Deleting…" : "Delete quote / enquiry"}
+        </button>
       </div>
       <style>{`@media (max-width:900px){ .es-detail-grid{ grid-template-columns:1fr !important; } }`}</style>
     </div>

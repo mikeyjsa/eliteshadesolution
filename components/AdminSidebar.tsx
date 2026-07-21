@@ -5,16 +5,17 @@ import { useState } from "react";
 
 const RUN_ITEMS = [
   ["/admin",          "Dashboard",    "◈"],
+  ["/admin/notifications", "Notifications", "◉"],
   ["/admin/leads",    "CRM Pipeline", "▤"],
   ["/admin/invoices", "Invoices",     "₴"],
   ["/admin/schedule", "Schedule",     "▦"],
 ];
 
 const CONFIG_ITEMS_ALL = [
+  ["/admin/teams",    "Teams",         "⚑"],
   ["/admin/pricing",  "Pricing",       "✦"],
   ["/admin/content",  "Content (CMS)", "✎"],
   ["/admin/reports",  "Reports",       "▱"],
-  ["/admin/google-analytics", "Google Analytics", "◔"],
   ["/admin/backups",  "Backups",       "⧉"],   // admin only
   ["/admin/users",    "Users",         "👤"],   // admin only
   ["/admin/settings", "Settings",      "⚙"],   // admin only
@@ -24,10 +25,12 @@ export default function AdminSidebar({
   userName,
   userRole,
   userId,
+  unreadNotifications = 0,
 }: {
   userName?: string;
   userRole?: string;
   userId?: string;
+  unreadNotifications?: number;
 }) {
   const path = usePathname();
   const router = useRouter();
@@ -119,7 +122,14 @@ export default function AdminSidebar({
               return (
                 <Link key={href} href={href} className={`admin-link${active ? " active" : ""}`}>
                   <span style={{ width: 16, textAlign: "center", opacity: 0.8 }}>{icon}</span>
-                  {label}
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 8 }}>
+                    <span>{label}</span>
+                    {href === "/admin/notifications" && unreadNotifications > 0 && (
+                      <span style={{ minWidth: 20, padding: "1px 6px", borderRadius: 999, background: "var(--color-brass)", color: "#1c2733", fontSize: 11, fontWeight: 800, textAlign: "center" }}>
+                        {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                      </span>
+                    )}
+                  </span>
                 </Link>
               );
             })}

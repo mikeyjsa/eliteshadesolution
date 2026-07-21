@@ -50,7 +50,17 @@ export default function KanbanBoard({ initial }: { initial: Card[] }) {
     router.refresh();
   }
   async function removeArchived(id: string) {
-    if (!confirm("Delete this archived lead permanently? This will remove linked invoices, activities, and installation records too.")) return;
+    if (!confirm("Delete this lead permanently? This will remove linked invoices, activities, schedule entries, and payment proofs too.")) return;
+    setCards((cs) => cs.filter((c) => c.id !== id));
+    const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      router.refresh();
+      return;
+    }
+    router.refresh();
+  }
+  async function removeLead(id: string) {
+    if (!confirm("Delete this quote or enquiry permanently? This will remove linked invoices, activities, schedule entries, and payment proofs too.")) return;
     setCards((cs) => cs.filter((c) => c.id !== id));
     const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
     if (!res.ok) {
@@ -132,6 +142,7 @@ export default function KanbanBoard({ initial }: { initial: Card[] }) {
                     {c.status === "installed" && (
                       <button onClick={() => setArchived(c.id, true)} title="Archive" style={{ position: "absolute", top: 6, right: 6, background: "none", border: "none", color: "var(--color-silver)", cursor: "pointer", fontSize: 13 }}>⤓</button>
                     )}
+                    <button onClick={() => removeLead(c.id)} title="Delete" style={{ position: "absolute", bottom: 8, right: 8, background: "none", border: "none", color: "#a23c34", cursor: "pointer", fontSize: 12.5, fontWeight: 700 }}>Delete</button>
                   </div>
                 ))}
               </div>

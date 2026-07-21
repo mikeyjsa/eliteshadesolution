@@ -1,6 +1,7 @@
 // Shared invoice generation — used by the admin "Generate deposit/balance"
 // action and by the public quote-accept flow.
 import { getDB, mutate, uid } from "./db";
+import { pushAdminNotification } from "./notifications";
 import type { Invoice } from "./types";
 
 export async function generateInvoice(
@@ -22,6 +23,7 @@ export async function generateInvoice(
   const amount = type === "deposit" ? depositAmt : q.final_total - depositAmt;
 
   const invoice: Invoice = await mutate((d) => {
+    const customer = d.customers.find((item) => item.id === q.customer_id);
     d.counters.invoice += 1;
     const invId = uid("inv_");
     const inv: Invoice = {
@@ -46,6 +48,14 @@ export async function generateInvoice(
       user_id: actorId,
       type: "invoice",
       message: `${type === "deposit" ? "Deposit" : "Balance"} invoice ${inv.number} generated — R${amount}.`,
+      created_at: inv.issued_at,
+    });
+    pushAdminNotification(d, {
+      title: `${type === "deposit" ? "Deposit" : "Balance"} invoice created`,
+      message: `${inv.number} was generated for ${customer?.name ?? "this customer"} at R${amount}.`,
+      href: `/admin/invoices/${inv.id}`,
+      kind: "invoice",
+      quote_id: quoteId,
       created_at: inv.issued_at,
     });
     return inv;

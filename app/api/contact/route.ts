@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, mutate, uid } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { pushAdminNotification } from "@/lib/notifications";
 import { adminNotificationEmails, absUrl } from "@/lib/site";
 import type { Customer, Quote } from "@/lib/types";
 
@@ -57,6 +58,14 @@ export async function POST(req: NextRequest) {
       user_id: "system",
       type: "lead_created",
       message: `Contact form enquiry from ${f.name} (${f.suburb || "unknown suburb"}). Message: "${(f.message || "").slice(0, 80)}${(f.message || "").length > 80 ? "…" : ""}"`,
+      created_at: now,
+    });
+    pushAdminNotification(d, {
+      title: "New contact enquiry",
+      message: `${f.name} sent a website enquiry${f.suburb ? ` from ${f.suburb}` : ""}.`,
+      href: `/admin/quotes/${qid}`,
+      kind: "lead",
+      quote_id: qid,
       created_at: now,
     });
   });
