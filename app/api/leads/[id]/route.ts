@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, mutate, uid } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { pushAdminNotification } from "@/lib/notifications";
-import { ensureQuoteToken, sendQuoteEmail } from "@/lib/quote-flow";
+import { ensureQuoteToken, quoteUrl, sendQuoteEmail } from "@/lib/quote-flow";
 import { STAGES, type QuoteInputs, type QuoteLineItem, type QuoteStage } from "@/lib/types";
 import { promises as fs } from "fs";
 import path from "path";
@@ -117,9 +117,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.send_quote_email && result.final_total != null) {
     const token = await ensureQuoteToken(id);
     if (token) {
-      quoteLink = `${req.nextUrl.origin}/q/${token}`;
+      quoteLink = quoteUrl(token);
       const fresh = (await getDB()).quotes.find((x) => x.id === id);
-      if (fresh) await sendQuoteEmail(fresh, req.nextUrl.origin);
+      if (fresh) await sendQuoteEmail(fresh);
     }
   }
 

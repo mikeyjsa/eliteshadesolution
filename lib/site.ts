@@ -2,8 +2,24 @@ export const SITE_NAME = "Elite Shade Solutions";
 export const SITE_TAGLINE = "Engineered Shade. Exceptional Spaces.";
 export const SITE_DESCRIPTION =
   "Premium Kalahari shade sails, professionally installed in Cape Town. Get a real online estimate in two minutes with transparent pricing, engineered fixings, and owner-led service.";
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://eliteshadesolutions.co.za";
+const DEFAULT_SITE_URL = "https://eliteshadesolutions.co.za";
+const PRIVATE_HOSTS = new Set(["0.0.0.0", "127.0.0.1", "localhost", "::1"]);
+
+function publicSiteUrl(value?: string): string {
+  try {
+    const url = new URL(value?.trim() || DEFAULT_SITE_URL);
+    const hostname = url.hostname.toLowerCase();
+    if (!/^https?:$/.test(url.protocol) || PRIVATE_HOSTS.has(hostname)) {
+      return DEFAULT_SITE_URL;
+    }
+    if (hostname === "www.eliteshadesolutions.co.za") return DEFAULT_SITE_URL;
+    return url.origin;
+  } catch {
+    return DEFAULT_SITE_URL;
+  }
+}
+
+export const SITE_URL = publicSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
 
 export function absUrl(path = "/") {
   return new URL(path, SITE_URL).toString();

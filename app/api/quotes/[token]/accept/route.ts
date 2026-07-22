@@ -7,7 +7,7 @@ import { sendDepositInvoiceEmail } from "@/lib/quote-flow";
 // Public: client accepts their quote. Idempotent — re-accepting returns the
 // existing deposit invoice. Generates the deposit invoice and emails it with
 // PayFast + EFT payment options.
-export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const db = await getDB();
   const quote = db.quotes.find((x) => x.public_token === token);
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
   if (firstAccept) {
     const fresh = (await getDB()).quotes.find((x) => x.id === quote.id)!;
-    await sendDepositInvoiceEmail(fresh, result.invoice, req.nextUrl.origin);
+    await sendDepositInvoiceEmail(fresh, result.invoice);
   }
 
   return NextResponse.json({ ok: true, invoiceId: result.invoice.id });

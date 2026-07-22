@@ -19,17 +19,17 @@ export async function ensureQuoteToken(quoteId: string): Promise<string | null> 
   });
 }
 
-export function quoteUrl(origin: string, token: string): string {
-  return `${origin}/q/${token}`;
+export function quoteUrl(token: string): string {
+  return absUrl(`/q/${token}`);
 }
 
 // Email the client their confirmed quote with a view/download/accept link.
-export async function sendQuoteEmail(quote: Quote, origin: string): Promise<void> {
+export async function sendQuoteEmail(quote: Quote): Promise<void> {
   const db = await getDB();
   const customer = db.customers.find((c) => c.id === quote.customer_id);
   if (!customer || !quote.public_token || quote.final_total == null) return;
 
-  const url = quoteUrl(origin, quote.public_token);
+  const url = quoteUrl(quote.public_token);
   const total = zar(quote.final_total);
   const deposit = zar(Math.round(quote.final_total * db.settings.deposit_pct / 100));
   const paymentSentence = paymentOptionsSentence(db.settings);
@@ -71,14 +71,14 @@ export async function sendQuoteEmail(quote: Quote, origin: string): Promise<void
 }
 
 // Email the client their deposit invoice with the currently enabled payment options.
-export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice, origin: string): Promise<void> {
+export async function sendDepositInvoiceEmail(quote: Quote, invoice: Invoice): Promise<void> {
   const db = await getDB();
   const customer = db.customers.find((c) => c.id === quote.customer_id);
   if (!customer) return;
 
   const allowGateway = gatewayEnabled(db.settings);
-  const payUrl = `${origin}/pay/${invoice.id}`;
-  const pdfUrl = `${origin}/api/invoices/${invoice.id}/pdf`;
+  const payUrl = absUrl(`/pay/${invoice.id}`);
+  const pdfUrl = absUrl(`/api/invoices/${invoice.id}/pdf`);
   const eft = eftDetails(db.settings);
   const adminInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
 
