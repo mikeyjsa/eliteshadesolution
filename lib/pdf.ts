@@ -251,7 +251,7 @@ export async function invoicePDF(
   page.drawRectangle({ x: 0, y: 0, width, height: 72, color: NAVY });
   t(settings.company_name + " · " + (settings.company_address || "Cape Town, Western Cape"),
     40, 50, 8, font, rgb(0.75, 0.82, 0.87));
-  t(`${settings.sales_name || "Jean-Pierre Miller"} · ${settings.sales_role || "Sales"} · ${settings.sales_phone || "067 618 2422"}`, 40, 34, 8, font, rgb(0.6, 0.68, 0.75));
+  t(`${settings.sales_name || "Jean-Pierre Miller"} · ${settings.sales_role || "Sales"} · ${settings.sales_phone || "071 581 4268"}`, 40, 34, 8, font, rgb(0.6, 0.68, 0.75));
   t(`${settings.marketing_name || "Michael Theron"} · ${settings.marketing_role || "Marketing / Online sales"} · ${settings.marketing_phone || "060 949 1197"}`, 40, 20, 8, font, rgb(0.6, 0.68, 0.75));
   if (settings.vat_enabled) {
     t("VAT Reg: " + settings.vat_number, width - 170, 50, 8, font, rgb(0.75, 0.82, 0.87));
@@ -420,7 +420,7 @@ export async function quotePDF(
   page.drawRectangle({ x: 0, y: 0, width, height: 72, color: NAVY });
   t(settings.company_name + " · " + (settings.company_address || "Cape Town, Western Cape"),
     40, 50, 8, font, rgb(0.75, 0.82, 0.87));
-  t(`${settings.sales_name || "Jean-Pierre Miller"} · ${settings.sales_role || "Sales"} · ${settings.sales_phone || "067 618 2422"}`, 40, 34, 8, font, rgb(0.6, 0.68, 0.75));
+  t(`${settings.sales_name || "Jean-Pierre Miller"} · ${settings.sales_role || "Sales"} · ${settings.sales_phone || "071 581 4268"}`, 40, 34, 8, font, rgb(0.6, 0.68, 0.75));
   t(`${settings.marketing_name || "Michael Theron"} · ${settings.marketing_role || "Marketing / Online sales"} · ${settings.marketing_phone || "060 949 1197"}`, 40, 20, 8, font, rgb(0.6, 0.68, 0.75));
   if (settings.vat_enabled) t("VAT Reg: " + settings.vat_number, width - 170, 50, 8, font, rgb(0.75, 0.82, 0.87));
   t(settings.sales_email || settings.email_from || "sales@eliteshadesolutions.co.za", width - 230, 34, 8, font, rgb(0.6, 0.68, 0.75));

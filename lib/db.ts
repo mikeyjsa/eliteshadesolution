@@ -17,6 +17,9 @@ function hydrate(db: DB): DB {
   }));
   db.teams ||= [];
   db.notifications ||= [];
+  db.mailing_lists ||= [];
+  db.email_campaigns ||= [];
+  db.email_campaign_sends ||= [];
   return db;
 }
 

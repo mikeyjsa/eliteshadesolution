@@ -201,6 +201,58 @@ export interface EmailLog {
   sent_at: string;
   channel: "resend" | "smtp" | "outbox";
   status: "sent" | "queued" | "failed";
+  error?: string;
+}
+
+export interface MailingContact {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface MailingList {
+  id: string;
+  name: string;
+  contacts: MailingContact[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailCampaign {
+  id: string;
+  name: string;
+  subject: string;
+  html: string;
+  reply_to: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailCampaignRecipient {
+  name: string;
+  email: string;
+  status: "sent" | "queued" | "failed";
+  sent_at: string;
+  error?: string;
+}
+
+export interface EmailCampaignSend {
+  id: string;
+  campaign_id: string;
+  campaign_name: string;
+  list_id: string;
+  list_name: string;
+  subject: string;
+  from: string;
+  reply_to: string;
+  status: "sending" | "completed" | "partial" | "failed";
+  total: number;
+  sent: number;
+  queued: number;
+  failed: number;
+  started_at: string;
+  completed_at?: string;
+  recipients: EmailCampaignRecipient[];
 }
 
 export interface AdminNotification {
@@ -227,5 +279,8 @@ export interface DB {
   settings: Settings;
   users: AdminUser[];
   emails: EmailLog[];
+  mailing_lists: MailingList[];
+  email_campaigns: EmailCampaign[];
+  email_campaign_sends: EmailCampaignSend[];
   counters: { invoice: number };
 }

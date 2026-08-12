@@ -9,6 +9,7 @@ const RUN_ITEMS = [
   ["/admin/leads",    "CRM Pipeline", "▤"],
   ["/admin/invoices", "Invoices",     "₴"],
   ["/admin/schedule", "Schedule",     "▦"],
+  ["/admin/email-marketing", "Email Marketing", "✉"],
 ];
 
 const CONFIG_ITEMS_ALL = [

@@ -16,8 +16,8 @@ export default async function Contact() {
   const info = {
     sales_name: block?.meta.sales_name || s.sales_name || "Jean-Pierre Miller",
     sales_role: block?.meta.sales_role || s.sales_role || "Sales",
-    sales_phone: block?.meta.sales_phone || s.sales_phone || "067 618 2422",
-    sales_whatsapp: block?.meta.sales_whatsapp || s.sales_whatsapp || s.whatsapp || "27676182422",
+    sales_phone: block?.meta.sales_phone || s.sales_phone || "071 581 4268",
+    sales_whatsapp: block?.meta.sales_whatsapp || s.sales_whatsapp || s.whatsapp || "27715814268",
     marketing_name: block?.meta.marketing_name || s.marketing_name || "Michael Theron",
     marketing_role: block?.meta.marketing_role || s.marketing_role || "Marketing / Online sales",
     marketing_phone: block?.meta.marketing_phone || s.marketing_phone || "060 949 1197",

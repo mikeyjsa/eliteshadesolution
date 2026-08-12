@@ -28,7 +28,7 @@ export default function Footer({
   legalNote = "Prices shown are indicative estimates; final pricing confirmed after a free site survey.",
   salesName = "Jean-Pierre Miller",
   salesRole = "Sales",
-  salesPhone = "067 618 2422",
+  salesPhone = "071 581 4268",
   marketingName = "Michael Theron",
   marketingRole = "Marketing / Online sales",
   marketingPhone = "060 949 1197",
