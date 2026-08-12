@@ -6,3 +6,4 @@ export const BACKUP_DIR = path.join(DATA_DIR, "backups");
 export const PUBLIC_DIR = path.join(process.cwd(), "public");
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 export const PAYMENT_PROOFS_DIR = path.join(UPLOADS_DIR, "payment-proofs");
+export const EMAIL_ATTACHMENTS_DIR = path.join(UPLOADS_DIR, "email-marketing");

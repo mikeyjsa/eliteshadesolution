@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { getDB, mutate, uid } from "@/lib/db";
 import { sendHtmlEmail } from "@/lib/email";
+import { EMAIL_ATTACHMENTS_DIR } from "@/lib/storage-paths";
+import { promises as fs } from "fs";
+import path from "path";
 import type {
   EmailCampaign,
   EmailCampaignRecipient,
@@ -12,6 +15,7 @@ import type {
 
 const MAILER_FROM = "sales@eliteshadesolutions.co.za";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
 function cleanHeader(value: unknown) {
   return String(value || "").replace(/[\r\n]+/g, " ").trim();
@@ -45,6 +49,33 @@ function normaliseContacts(value: unknown): MailingContact[] {
     seen.add(email);
     return [{ id: cleanHeader(entry?.id) || uid("mlc_"), name: cleanHeader(entry?.name), email }];
   });
+}
+
+function attachmentPath(url?: string) {
+  if (!url?.startsWith("/uploads/email-marketing/")) return null;
+  const filename = path.basename(url);
+  return path.join(EMAIL_ATTACHMENTS_DIR, filename);
+}
+
+function campaignAttachment(campaign: EmailCampaign) {
+  const filePath = attachmentPath(campaign.attachment_url);
+  if (!filePath || !campaign.attachment_name) return undefined;
+  return { filename: campaign.attachment_name, path: filePath };
+}
+
+async function savePdf(dataUrl: unknown, originalName: unknown) {
+  if (typeof dataUrl !== "string" || !dataUrl) return null;
+  const match = dataUrl.match(/^data:application\/pdf;base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) throw new Error("Only PDF attachments are allowed.");
+  const bytes = Buffer.from(match[1], "base64");
+  if (!bytes.length || bytes.length > MAX_PDF_BYTES) throw new Error("PDF attachments must be 10 MB or smaller.");
+  if (bytes.subarray(0, 5).toString("ascii") !== "%PDF-") throw new Error("The selected file is not a valid PDF.");
+  const displayBase = cleanHeader(originalName).replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9 _.-]/g, "").slice(0, 100) || "campaign-attachment";
+  const displayName = `${displayBase}.pdf`;
+  const storedName = `${uid("mailer_")}.pdf`;
+  await fs.mkdir(EMAIL_ATTACHMENTS_DIR, { recursive: true });
+  await fs.writeFile(path.join(EMAIL_ATTACHMENTS_DIR, storedName), bytes);
+  return { url: `/uploads/email-marketing/${storedName}`, name: displayName };
 }
 
 async function requireUser() {
@@ -102,19 +133,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Campaign name, subject and HTML are required." }, { status: 400 });
     }
     const replyTo = allowedReplyTo(body.reply_to, salesEmail, infoEmail);
+    const previous = db.email_campaigns.find((item) => item.id === body.id);
+    const previousAttachmentUrl = previous?.attachment_url;
+    let uploaded: Awaited<ReturnType<typeof savePdf>>;
+    try {
+      uploaded = await savePdf(body.attachment_data_url, body.attachment_name);
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Could not save PDF attachment." }, { status: 400 });
+    }
+    const removeAttachment = body.remove_attachment === true;
+    const nextAttachmentUrl = uploaded?.url ?? (removeAttachment ? undefined : previous?.attachment_url);
+    const nextAttachmentName = uploaded?.name ?? (removeAttachment ? undefined : previous?.attachment_name);
+    const listId = cleanHeader(body.list_id);
+    const validListId = db.mailing_lists.some((item) => item.id === listId) ? listId : undefined;
     const campaign = await mutate((data) => {
       const now = new Date().toISOString();
       const existing = data.email_campaigns.find((item) => item.id === body.id);
       if (existing) {
-        Object.assign(existing, { name, subject, html, reply_to: replyTo, updated_at: now });
+        Object.assign(existing, {
+          name,
+          subject,
+          html,
+          reply_to: replyTo,
+          list_id: validListId,
+          attachment_url: nextAttachmentUrl,
+          attachment_name: nextAttachmentName,
+          updated_at: now,
+        });
         return existing;
       }
       const next: EmailCampaign = {
-        id: uid("cmp_"), name, subject, html, reply_to: replyTo, created_at: now, updated_at: now,
+        id: uid("cmp_"),
+        name,
+        subject,
+        html,
+        reply_to: replyTo,
+        list_id: validListId,
+        attachment_url: nextAttachmentUrl,
+        attachment_name: nextAttachmentName,
+        created_at: now,
+        updated_at: now,
       };
       data.email_campaigns.unshift(next);
       return next;
     });
+    if ((uploaded || removeAttachment) && previousAttachmentUrl && previousAttachmentUrl !== nextAttachmentUrl) {
+      const oldPath = attachmentPath(previousAttachmentUrl);
+      if (oldPath) await fs.unlink(oldPath).catch(() => {});
+    }
     return NextResponse.json({ ok: true, campaign });
   }
 
@@ -124,11 +190,15 @@ export async function POST(req: NextRequest) {
     if (!campaign) return NextResponse.json({ error: "Save the campaign before testing it." }, { status: 404 });
     if (!EMAIL_PATTERN.test(to)) return NextResponse.json({ error: "Enter a valid test email address." }, { status: 400 });
     const name = cleanHeader(body.name) || user.name || "Test Recipient";
+    const attachment = campaignAttachment(campaign);
+    if (campaign.attachment_url && !attachment) {
+      return NextResponse.json({ error: "The campaign PDF attachment is unavailable. Upload it again before sending." }, { status: 400 });
+    }
     const log = await sendHtmlEmail(
       to,
       `[TEST] ${personalize(campaign.subject, name)}`,
       personalize(campaign.html, name, true),
-      { from: MAILER_FROM, replyTo: allowedReplyTo(campaign.reply_to, salesEmail, infoEmail) }
+      { from: MAILER_FROM, replyTo: allowedReplyTo(campaign.reply_to, salesEmail, infoEmail), attachment }
     );
     return NextResponse.json({ ok: log.status !== "failed", status: log.status, error: log.error });
   }
@@ -139,6 +209,17 @@ export async function POST(req: NextRequest) {
     if (!campaign || !list) return NextResponse.json({ error: "Choose a saved campaign and recipient list." }, { status: 404 });
     if (!list.contacts.length) return NextResponse.json({ error: "The selected list is empty." }, { status: 400 });
     const replyTo = allowedReplyTo(campaign.reply_to, salesEmail, infoEmail);
+    const attachment = campaignAttachment(campaign);
+    if (campaign.attachment_url && !attachment) {
+      return NextResponse.json({ error: "The campaign PDF attachment is unavailable. Upload it again before sending." }, { status: 400 });
+    }
+    await mutate((data) => {
+      const savedCampaign = data.email_campaigns.find((item) => item.id === campaign.id);
+      if (savedCampaign) {
+        savedCampaign.list_id = list.id;
+        savedCampaign.updated_at = new Date().toISOString();
+      }
+    });
     const report: EmailCampaignSend = {
       id: uid("send_"),
       campaign_id: campaign.id,
@@ -148,6 +229,7 @@ export async function POST(req: NextRequest) {
       subject: campaign.subject,
       from: MAILER_FROM,
       reply_to: replyTo,
+      attachment_name: campaign.attachment_name,
       status: "sending",
       total: list.contacts.length,
       sent: 0,
@@ -163,7 +245,7 @@ export async function POST(req: NextRequest) {
         contact.email,
         personalize(campaign.subject, contact.name),
         personalize(campaign.html, contact.name, true),
-        { from: MAILER_FROM, replyTo }
+        { from: MAILER_FROM, replyTo, attachment }
       );
       const recipient: EmailCampaignRecipient = {
         name: contact.name,
@@ -201,9 +283,15 @@ export async function DELETE(req: NextRequest) {
   if (!id || (type !== "list" && type !== "campaign")) {
     return NextResponse.json({ error: "Invalid delete request." }, { status: 400 });
   }
+  let attachmentToDelete: string | null = null;
   await mutate((db) => {
     if (type === "list") db.mailing_lists = db.mailing_lists.filter((item) => item.id !== id);
-    if (type === "campaign") db.email_campaigns = db.email_campaigns.filter((item) => item.id !== id);
+    if (type === "campaign") {
+      const campaign = db.email_campaigns.find((item) => item.id === id);
+      attachmentToDelete = attachmentPath(campaign?.attachment_url);
+      db.email_campaigns = db.email_campaigns.filter((item) => item.id !== id);
+    }
   });
+  if (attachmentToDelete) await fs.unlink(attachmentToDelete).catch(() => {});
   return NextResponse.json({ ok: true });
 }

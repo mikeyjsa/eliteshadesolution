@@ -224,6 +224,9 @@ export interface EmailCampaign {
   subject: string;
   html: string;
   reply_to: string;
+  list_id?: string;
+  attachment_url?: string;
+  attachment_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -245,6 +248,7 @@ export interface EmailCampaignSend {
   subject: string;
   from: string;
   reply_to: string;
+  attachment_name?: string;
   status: "sending" | "completed" | "partial" | "failed";
   total: number;
   sent: number;

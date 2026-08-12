@@ -3,6 +3,7 @@
 // record is saved so every message is viewable under Settings → Outbox.
 import { getDB, mutate, uid } from "./db";
 import type { EmailLog } from "./types";
+import { promises as fs } from "fs";
 
 export function render(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
@@ -279,6 +280,10 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
 export interface HtmlEmailOptions {
   from?: string;
   replyTo?: string;
+  attachment?: {
+    filename: string;
+    path: string;
+  };
 }
 
 function htmlToText(html: string) {
@@ -313,6 +318,7 @@ export async function sendHtmlEmail(
     ? envProvider
     : (db.settings.email_provider || (key ? "resend" : "outbox"));
   const text = htmlToText(html);
+  const attachment = options.attachment;
   let channel: EmailLog["channel"] = "outbox";
   let status: EmailLog["status"] = "queued";
   let error = "";
@@ -333,6 +339,7 @@ export async function sendHtmlEmail(
         subject,
         text,
         html,
+        attachments: attachment ? [{ filename: attachment.filename, path: attachment.path, contentType: "application/pdf" }] : undefined,
       });
       channel = "smtp";
       status = "sent";
@@ -343,10 +350,13 @@ export async function sendHtmlEmail(
     }
   } else if (provider === "resend" && key) {
     try {
+      const attachments = attachment
+        ? [{ filename: attachment.filename, content: (await fs.readFile(attachment.path)).toString("base64") }]
+        : undefined;
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: `${fromName} <${from}>`, reply_to: replyTo, to, subject, text, html }),
+        body: JSON.stringify({ from: `${fromName} <${from}>`, reply_to: replyTo, to, subject, text, html, attachments }),
       });
       channel = "resend";
       status = res.ok ? "sent" : "failed";

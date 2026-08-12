@@ -56,6 +56,15 @@ function formatDate(value?: string) {
   return new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read the selected PDF."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function EmailMarketingManager({
   initialLists,
   initialCampaigns,
@@ -81,6 +90,8 @@ export default function EmailMarketingManager({
   const [list, setList] = useState<MailingList>(initialLists[0] || freshList());
   const [selectedListId, setSelectedListId] = useState(initialLists[0]?.id || "");
   const [testEmail, setTestEmail] = useState(initialTestEmail);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [removeAttachment, setRemoveAttachment] = useState(false);
   const [bulkContacts, setBulkContacts] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
@@ -101,10 +112,20 @@ export default function EmailMarketingManager({
     setBusy("campaign");
     setMessage("");
     try {
-      const data = await call({ action: "save_campaign", ...campaign });
+      const attachmentDataUrl = attachmentFile ? await fileToDataUrl(attachmentFile) : undefined;
+      const data = await call({
+        action: "save_campaign",
+        ...campaign,
+        list_id: selectedListId,
+        attachment_data_url: attachmentDataUrl,
+        attachment_name: attachmentFile?.name,
+        remove_attachment: removeAttachment,
+      });
       const saved = data.campaign as EmailCampaign;
       setCampaign(saved);
       setCampaigns((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
+      setAttachmentFile(null);
+      setRemoveAttachment(false);
       setMessage("Campaign saved. You can now send a test or choose a list.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save campaign.");
@@ -136,13 +157,16 @@ export default function EmailMarketingManager({
       setMessage("Save the campaign and choose a recipient list first.");
       return;
     }
-    if (!confirm(`Send “${campaign.name}” to ${selected.contacts.length} recipient${selected.contacts.length === 1 ? "" : "s"}? This begins delivery immediately.`)) return;
+    const attachmentNotice = campaign.attachment_name ? ` with ${campaign.attachment_name} attached` : "";
+    if (!confirm(`Send “${campaign.name}” to ${selected.contacts.length} recipient${selected.contacts.length === 1 ? "" : "s"}${attachmentNotice}? This begins delivery immediately.`)) return;
     setBusy("send");
     setMessage("Sending the campaign. Keep this page open until the report is ready.");
     try {
       const data = await call({ action: "send_campaign", campaign_id: campaign.id, list_id: selected.id });
       const report = data.report as EmailCampaignSend;
       setSends((current) => [report, ...current.filter((item) => item.id !== report.id)]);
+      setCampaign((current) => ({ ...current, list_id: selected.id }));
+      setCampaigns((current) => current.map((item) => item.id === campaign.id ? { ...item, list_id: selected.id } : item));
       setOpenReport(report.id);
       setTab("reports");
       setMessage(`Delivery complete: ${report.sent} sent, ${report.queued} queued, ${report.failed} failed.`);
@@ -200,6 +224,8 @@ export default function EmailMarketingManager({
       } else {
         setCampaigns((current) => current.filter((item) => item.id !== id));
         setCampaign(freshCampaign(salesEmail));
+        setAttachmentFile(null);
+        setRemoveAttachment(false);
       }
       setMessage(`${type === "list" ? "List" : "Campaign"} deleted.`);
     } catch (error) {
@@ -211,6 +237,36 @@ export default function EmailMarketingManager({
 
   const totalSent = sends.reduce((sum, item) => sum + item.sent, 0);
   const totalFailed = sends.reduce((sum, item) => sum + item.failed, 0);
+
+  function selectCampaign(id: string) {
+    const selected = campaigns.find((item) => item.id === id) || freshCampaign(salesEmail);
+    setCampaign(selected);
+    setSelectedListId(selected.list_id || "");
+    setAttachmentFile(null);
+    setRemoveAttachment(false);
+  }
+
+  function editAndResend(report: EmailCampaignSend) {
+    const selected = campaigns.find((item) => item.id === report.campaign_id);
+    if (!selected) {
+      setMessage("This campaign was deleted, so its previous report cannot be reopened for editing.");
+      return;
+    }
+    setCampaign(selected);
+    setSelectedListId(lists.some((item) => item.id === report.list_id) ? report.list_id : selected.list_id || "");
+    setAttachmentFile(null);
+    setRemoveAttachment(false);
+    setTab("campaigns");
+    setMessage("Campaign reopened. Edit the HTML, attachment or recipient list, save it, then send it again.");
+  }
+
+  function editSelectedList() {
+    const selected = lists.find((item) => item.id === selectedListId);
+    if (!selected) return;
+    setList(selected);
+    setTab("lists");
+    setMessage(`Editing “${selected.name}”. Save the list, then return to Create & Send to resend the campaign.`);
+  }
 
   return (
     <div style={{ maxWidth: 1240 }}>
@@ -245,7 +301,7 @@ export default function EmailMarketingManager({
           <div className="card" style={{ padding: 22 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 18 }}>
               <h3 className="display" style={{ fontSize: 17, margin: 0, color: "var(--color-navy)" }}>HTML campaign</h3>
-              <select style={{ ...field, width: 230 }} value={campaign.id} onChange={(event) => setCampaign(campaigns.find((item) => item.id === event.target.value) || freshCampaign(salesEmail))}>
+              <select style={{ ...field, width: 230 }} value={campaign.id} onChange={(event) => selectCampaign(event.target.value)}>
                 <option value="">New campaign</option>
                 {campaigns.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
               </select>
@@ -255,6 +311,33 @@ export default function EmailMarketingManager({
               <div><label style={label}>Email subject</label><input style={field} value={campaign.subject} onChange={(event) => setCampaign({ ...campaign, subject: event.target.value })} placeholder="A cooler outdoor space for {name}" /></div>
               <div><label style={label}>From</label><input style={{ ...field, background: "#f1f4f6" }} value="sales@eliteshadesolutions.co.za" readOnly /></div>
               <div><label style={label}>Replies go to</label><select style={field} value={campaign.reply_to} onChange={(event) => setCampaign({ ...campaign, reply_to: event.target.value })}><option value={salesEmail}>{salesEmail}</option><option value={infoEmail}>{infoEmail}</option></select></div>
+            </div>
+            <div style={{ marginTop: 14, padding: 14, borderRadius: 10, background: "#f1f4f6" }}>
+              <label style={label}>PDF attachment <span style={{ color: "var(--color-steel)", fontWeight: 500 }}>Optional, maximum 10 MB.</span></label>
+              {campaign.attachment_name && !removeAttachment && !attachmentFile && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10, fontSize: 12.5 }}>
+                  <a href={campaign.attachment_url} target="_blank" rel="noreferrer" style={{ color: "var(--color-navy)", fontWeight: 800 }}>{campaign.attachment_name} ↗</a>
+                  <button type="button" onClick={() => setRemoveAttachment(true)} style={{ border: 0, background: "none", color: "#a23c34", fontWeight: 800, cursor: "pointer" }}>Remove</button>
+                </div>
+              )}
+              {removeAttachment && !attachmentFile && <p style={{ margin: "0 0 9px", color: "#a23c34", fontSize: 12.5 }}>The current PDF will be removed when you save.</p>}
+              {attachmentFile && <p style={{ margin: "0 0 9px", color: "var(--color-navy)", fontSize: 12.5, fontWeight: 750 }}>Ready to upload: {attachmentFile.name}</p>}
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  if (file && (file.type !== "application/pdf" || file.size > 10 * 1024 * 1024)) {
+                    setMessage("Choose a valid PDF that is 10 MB or smaller.");
+                    event.target.value = "";
+                    return;
+                  }
+                  setAttachmentFile(file);
+                  setRemoveAttachment(false);
+                }}
+                style={{ ...field, padding: "8px 10px" }}
+              />
+              <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "var(--color-steel)" }}>The PDF is saved with this named campaign and included in tests and every resend.</p>
             </div>
             <div style={{ marginTop: 14 }}>
               <label style={label}>HTML source <span style={{ color: "var(--color-steel)", fontWeight: 500 }}>Use {"{name}"} wherever the recipient name should appear.</span></label>
@@ -278,7 +361,9 @@ export default function EmailMarketingManager({
             </div>
             <div className="card" style={{ padding: 18, borderTop: "4px solid var(--color-brass)" }}>
               <h3 className="display" style={{ fontSize: 16, margin: "0 0 12px", color: "var(--color-navy)" }}>Send to a list</h3>
-              <select style={field} value={selectedListId} onChange={(event) => setSelectedListId(event.target.value)}><option value="">Choose a saved list</option>{lists.map((item) => <option value={item.id} key={item.id}>{item.name} ({item.contacts.length})</option>)}</select>
+              <select style={field} value={selectedListId} onChange={(event) => { setSelectedListId(event.target.value); setCampaign((current) => ({ ...current, list_id: event.target.value })); }}><option value="">Choose a saved list</option>{lists.map((item) => <option value={item.id} key={item.id}>{item.name} ({item.contacts.length})</option>)}</select>
+              <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "var(--color-steel)" }}>You can edit the selected list under Email Lists before resending.</p>
+              <button className="btn-ghost" onClick={editSelectedList} disabled={!selectedListId || !!busy} style={{ width: "100%", padding: "8px 13px", marginTop: 9, fontSize: 12.5 }}>Edit selected email list</button>
               <button className="btn-brass" onClick={sendCampaign} disabled={!!busy || !campaign.id || !selectedListId} style={{ width: "100%", padding: "11px 16px", marginTop: 10 }}>{busy === "send" ? "Sending campaign…" : "Send mass emailer"}</button>
             </div>
           </div>
@@ -325,7 +410,10 @@ export default function EmailMarketingManager({
                 <span><small style={{ display: "block", color: "var(--color-steel)" }}>Total</small><strong>{report.total}</strong></span><span><small style={{ display: "block", color: "var(--color-steel)" }}>Sent</small><strong style={{ color: "#23764b" }}>{report.sent}</strong></span><span><small style={{ display: "block", color: "var(--color-steel)" }}>Queued</small><strong>{report.queued}</strong></span><span><small style={{ display: "block", color: "var(--color-steel)" }}>Failed</small><strong style={{ color: report.failed ? "#a23c34" : "inherit" }}>{report.failed}</strong></span><span>{expanded ? "▴" : "▾"}</span>
               </button>
               {expanded && <div style={{ padding: "0 18px 18px", background: "#f7f9fa" }}>
-                <div style={{ fontSize: 12, color: "var(--color-steel)", marginBottom: 10 }}>From {report.from} · Replies to {report.reply_to} · Subject: {report.subject}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 12, color: "var(--color-steel)" }}>From {report.from} · Replies to {report.reply_to} · Subject: {report.subject}{report.attachment_name ? ` · PDF: ${report.attachment_name}` : ""}</div>
+                  <button className="btn-ghost" onClick={() => editAndResend(report)} style={{ padding: "7px 12px", fontSize: 12 }}>Edit and resend</button>
+                </div>
                 <div style={{ overflowX: "auto", background: "#fff", border: "1px solid var(--color-line)", borderRadius: 9 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}><thead><tr>{["Name", "Email", "Status", "Time", "Detail"].map((heading) => <th key={heading} style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid var(--color-line)", color: "var(--color-steel)" }}>{heading}</th>)}</tr></thead><tbody>{report.recipients.map((recipient) => <tr key={`${report.id}-${recipient.email}`}><td style={{ padding: "10px 12px", borderBottom: "1px solid var(--color-mist)" }}>{recipient.name || "—"}</td><td style={{ padding: "10px 12px", borderBottom: "1px solid var(--color-mist)" }}>{recipient.email}</td><td style={{ padding: "10px 12px", borderBottom: "1px solid var(--color-mist)", fontWeight: 800, color: recipient.status === "failed" ? "#a23c34" : recipient.status === "sent" ? "#23764b" : "#80621f" }}>{recipient.status}</td><td style={{ padding: "10px 12px", borderBottom: "1px solid var(--color-mist)" }}>{formatDate(recipient.sent_at)}</td><td style={{ padding: "10px 12px", borderBottom: "1px solid var(--color-mist)", color: "var(--color-steel)" }}>{recipient.error || "—"}</td></tr>)}</tbody></table></div>
               </div>}
             </div>;
