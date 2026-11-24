@@ -88,7 +88,7 @@ function UserRow({ u, isCurrentUser, onRefresh }: { u: User; isCurrentUser: bool
               </div>
               <div>
                 <label style={lab}>New password <span style={{ fontWeight: 400, color: "var(--color-silver)" }}>(leave blank to keep)</span></label>
-                <input type="text" style={inp} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
+                <input type="password" autoComplete="new-password" style={inp} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div>
@@ -193,7 +193,7 @@ export default function UserManager({ users: initial, currentUserId }: { users: 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div><label style={lab}>Name</label><input style={inp} value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} /></div>
             <div><label style={lab}>Email</label><input type="email" style={inp} value={newForm.email} onChange={(e) => setNewForm({ ...newForm, email: e.target.value })} /></div>
-            <div><label style={lab}>Password</label><input type="text" style={inp} value={newForm.password} onChange={(e) => setNewForm({ ...newForm, password: e.target.value })} /></div>
+            <div><label style={lab}>Password</label><input type="password" autoComplete="new-password" style={inp} value={newForm.password} onChange={(e) => setNewForm({ ...newForm, password: e.target.value })} /></div>
             <div>
               <label style={lab}>Role</label>
               <select style={inp} value={newForm.role} onChange={(e) => setNewForm({ ...newForm, role: e.target.value as "admin" | "manager" })}>
@@ -213,7 +213,7 @@ export default function UserManager({ users: initial, currentUserId }: { users: 
             {msg && <p style={{ fontSize: 12.5, color: msg.startsWith("User") ? "var(--color-signal)" : "#a23c34", margin: 0 }}>{msg}</p>}
           </div>
           <div style={{ marginTop: 16, padding: "12px 14px", background: "var(--color-mist)", borderRadius: 8, fontSize: 12, color: "var(--color-steel)", lineHeight: 1.7 }}>
-            Passwords stored as plain text in this scaffold. Upgrade to bcrypt in production.
+            Passwords are stored as salted one-way hashes. Changing a password immediately signs out that user&apos;s other sessions.
           </div>
         </div>
       </div>

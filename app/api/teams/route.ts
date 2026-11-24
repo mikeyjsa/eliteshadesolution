@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, mutate, uid } from "@/lib/db";
 import type { Team } from "@/lib/types";
+import { currentUser } from "@/lib/auth";
 
 export async function GET() {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const db = await getDB();
   return NextResponse.json(db.teams);
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const body = await req.json();
   if (!body.name) {
     return NextResponse.json({ error: "Team name required" }, { status: 400 });
@@ -30,6 +33,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const body = await req.json();
   if (!body.id) return NextResponse.json({ error: "Team id required" }, { status: 400 });
 

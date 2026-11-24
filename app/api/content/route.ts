@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mutate, uid } from "@/lib/db";
 import type { Content } from "@/lib/types";
+import { currentUser } from "@/lib/auth";
+
+async function requireUser() {
+  return currentUser();
+}
 
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await requireUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const body = await req.json();
   const item: Content = await mutate((db) => {
     const it: Content = {
@@ -27,6 +33,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!(await requireUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const body = await req.json();
   await mutate((db) => {
     const it = db.content.find((c) => c.id === body.id);
@@ -40,6 +47,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!(await requireUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { id } = await req.json();
   await mutate((db) => {
     db.content = db.content.filter((c) => c.id !== id);

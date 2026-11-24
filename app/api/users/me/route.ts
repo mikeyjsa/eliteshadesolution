@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mutate } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { hashPassword } from "@/lib/passwords";
 
 export async function PATCH(req: NextRequest) {
   const me = await currentUser();
@@ -14,7 +15,7 @@ export async function PATCH(req: NextRequest) {
     if (!u) return;
     if (typeof body.name === "string" && body.name.trim()) u.name = body.name.trim();
     if (typeof body.email === "string" && body.email.trim()) u.email = body.email.trim();
-    if (typeof body.password === "string" && body.password.trim()) u.password = body.password.trim();
+    if (typeof body.password === "string" && body.password.trim()) u.password = hashPassword(body.password.trim());
     // role and active are NOT editable here
   });
   return NextResponse.json({ ok: true });

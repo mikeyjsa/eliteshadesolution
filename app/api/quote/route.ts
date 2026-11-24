@@ -6,15 +6,41 @@ import { zar } from "@/lib/format";
 import { pushAdminNotification } from "@/lib/notifications";
 import { adminNotificationEmails } from "@/lib/site";
 import type { Customer, Quote, QuoteInputs } from "@/lib/types";
+import { checkRateLimit, clientAddress } from "@/lib/rate-limit";
+import { cleanPublicEmail, cleanPublicText, isValidPublicEmail } from "@/lib/public-input";
+import { FABRIC_COLOURS } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
+  const limit = checkRateLimit(`quote:${clientAddress(req)}`, 10, 60 * 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many estimate requests from this connection. Please try again later." }, { status: 429 });
   const body = await req.json();
-  const inputs = body.inputs as QuoteInputs;
-  const contact = body.contact as { name: string; email: string; phone: string; suburb: string };
+  if (cleanPublicText(body?.website)) return NextResponse.json({ ok: true });
+  const rawInputs = body.inputs as Partial<QuoteInputs> | undefined;
+  const contact = {
+    name: cleanPublicText(body?.contact?.name, 100),
+    email: cleanPublicEmail(body?.contact?.email),
+    phone: cleanPublicText(body?.contact?.phone, 40),
+    suburb: cleanPublicText(body?.contact?.suburb, 100),
+  };
 
-  if (!contact?.name || !contact?.email) {
-    return NextResponse.json({ error: "Name and email required" }, { status: 400 });
+  if (!contact.name || !isValidPublicEmail(contact.email)) {
+    return NextResponse.json({ error: "Please enter your name and a valid email address." }, { status: 400 });
   }
+  const length = Number(rawInputs?.length);
+  const width = Number(rawInputs?.width);
+  const shapes: QuoteInputs["shape"][] = ["auto", "square", "rectangle", "triangle"];
+  const ranges: QuoteInputs["range"][] = ["any", "Standard", "Extreme"];
+  if (!Number.isFinite(length) || !Number.isFinite(width) || length < 1 || width < 1 || length > 20 || width > 20) {
+    return NextResponse.json({ error: "Dimensions must be between 1m and 20m." }, { status: 400 });
+  }
+  const inputs: QuoteInputs = {
+    length,
+    width,
+    shape: shapes.includes(rawInputs?.shape as QuoteInputs["shape"]) ? rawInputs!.shape! : "auto",
+    range: ranges.includes(rawInputs?.range as QuoteInputs["range"]) ? rawInputs!.range! : "any",
+    poles: rawInputs?.poles !== false,
+    colour: FABRIC_COLOURS.some((item) => item.name === rawInputs?.colour) ? rawInputs!.colour! : "Charcoal",
+  };
 
   const db = await getDB();
   const rates = ratesFromPricing(db.pricing);

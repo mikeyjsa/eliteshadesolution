@@ -4,6 +4,7 @@ import Reveal from "@/components/Reveal";
 import GAScript from "@/components/GAScript";
 import GAPageTracker from "@/components/GAPageTracker";
 import AnimationLayer from "@/components/AnimationLayer";
+import GAEngagementTracker from "@/components/GAEngagementTracker";
 import { getDB } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     <>
       <GAScript id={gaId} />
       <GAPageTracker id={gaId} />
+      <GAEngagementTracker enabled={Boolean(gaId)} />
       <Nav />
       <main style={{ minHeight: "70vh" }}>{children}</main>
       <Footer

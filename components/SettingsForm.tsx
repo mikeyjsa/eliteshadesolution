@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { dateZA } from "@/lib/format";
 import type { Settings, EmailLog } from "@/lib/types";
 
-type Tab = "company" | "email" | "analytics" | "templates" | "access" | "outbox";
+type Tab = "company" | "email" | "analytics" | "templates" | "outbox";
 
 export default function SettingsForm({ settings, emails }: { settings: Settings; emails: EmailLog[] }) {
   const [s, setS] = useState(settings);
@@ -20,10 +20,10 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
   }
   async function save() {
     setBusy(true);
-    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
+    const response = await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
     setBusy(false);
-    setSaved(true);
-    router.refresh();
+    setSaved(response.ok);
+    if (response.ok) router.refresh();
   }
 
   const inp: React.CSSProperties = { fontSize: 14, padding: "9px 12px", border: "1px solid var(--color-line)", borderRadius: 9, width: "100%" };
@@ -41,7 +41,6 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
     { key: "email", label: "Email" },
     { key: "analytics", label: "Analytics" },
     { key: "templates", label: "Templates" },
-    { key: "access", label: "Access" },
     { key: "outbox", label: `Outbox (${emails.length})` },
   ];
 
@@ -265,18 +264,9 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               Tracked public-site events
             </div>
             <div style={{ fontSize: 13.5, color: "var(--color-navy)", lineHeight: 1.7 }}>
-              <code>page_view</code>, <code>quote_submitted</code>, <code>estimate_email_intent</code>, <code>contact_submitted</code>, <code>quote_accepted</code>, <code>deposit_payment_link_opened</code>, <code>payment_method_selected</code>, <code>payfast_payment_started</code>, <code>eft_details_copied</code>
+              <code>page_view</code>, <code>quote_cta_clicked</code>, <code>quote_started</code>, <code>estimate_email_intent</code>, <code>quote_submitted</code>, <code>contact_submitted</code>, <code>phone_clicked</code>, <code>email_clicked</code>, <code>whatsapp_clicked</code>, <code>quote_accepted</code>, <code>deposit_payment_link_opened</code>, <code>payment_method_selected</code>, <code>payfast_payment_started</code>, <code>eft_details_copied</code>
             </div>
           </div>
-        </div>
-      )}
-
-      {tab === "access" && (
-        <div style={card}>
-          <h3 className="display" style={{ fontSize: 16, color: "var(--color-navy)", marginBottom: 14 }}>Access</h3>
-          <label style={lab}>Admin password</label>
-          <input style={{ ...inp, maxWidth: 280 }} value={s.admin_password} onChange={(e) => set("admin_password", e.target.value)} />
-          <p style={{ fontSize: 12, color: "var(--color-steel)", marginTop: 8 }}>Shared owner password (scaffold). Production swaps to per-user accounts with 2FA.</p>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { calcQuote, type Rates } from "@/lib/quote-engine";
 import { zar } from "@/lib/format";
 import { gtagEvent } from "@/lib/gtag";
@@ -17,23 +17,34 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
   const [colour, setColour] = useState<FabricColour>("Charcoal");
 
   const [sent, setSent] = useState<null | "sending" | "done">(null);
-  const [contact, setContact] = useState({ name: "", email: "", phone: "", suburb: "" });
+  const [contact, setContact] = useState({ name: "", email: "", phone: "", suburb: "", website: "" });
   const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState("");
+  const started = useRef(false);
+
+  function trackStart() {
+    if (started.current) return;
+    started.current = true;
+    gtagEvent("quote_started");
+  }
 
   const inputs: QuoteInputs = { length, width, shape, range, poles, colour };
   const result = useMemo(() => calcQuote(inputs, rates), [length, width, shape, range, poles, colour, rates]);
 
   async function submit() {
     setSent("sending");
+    setError("");
     const res = await fetch("/api/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ inputs, contact }),
+      body: JSON.stringify({ inputs, contact, website: contact.website }),
     });
     if (res.ok) {
       setSent("done");
       gtagEvent("quote_submitted", { colour, range, length, width });
     } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "We could not save your estimate. Please try again.");
       setSent(null);
     }
   }
@@ -50,16 +61,16 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <Field label="Area length (m)">
-            <input type="number" min={1} max={20} step={0.1} value={length} onChange={(e) => setLength(+e.target.value)} style={inp} id="q_L" />
+            <input type="number" min={1} max={20} step={0.1} value={length} onChange={(e) => { trackStart(); setLength(+e.target.value); }} style={inp} id="q_L" inputMode="decimal" />
           </Field>
           <Field label="Area width (m)">
-            <input type="number" min={1} max={20} step={0.1} value={width} onChange={(e) => setWidth(+e.target.value)} style={inp} id="q_W" />
+            <input type="number" min={1} max={20} step={0.1} value={width} onChange={(e) => { trackStart(); setWidth(+e.target.value); }} style={inp} id="q_W" inputMode="decimal" />
           </Field>
         </div>
 
         <div style={{ marginTop: 14 }}>
           <Field label="Preferred shape">
-            <select value={shape} onChange={(e) => setShape(e.target.value as QuoteInputs["shape"])} style={inp} id="q_shape">
+            <select value={shape} onChange={(e) => { trackStart(); setShape(e.target.value as QuoteInputs["shape"]); }} style={inp} id="q_shape">
               <option value="auto">Auto — best fit (recommended)</option>
               <option value="square">Square</option>
               <option value="rectangle">Rectangle</option>
@@ -69,7 +80,7 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
         </div>
         <div style={{ marginTop: 14 }}>
           <Field label="Kalahari range">
-            <select value={range} onChange={(e) => setRange(e.target.value as QuoteInputs["range"])} style={inp} id="q_range">
+            <select value={range} onChange={(e) => { trackStart(); setRange(e.target.value as QuoteInputs["range"]); }} style={inp} id="q_range">
               <option value="any">Best value — cheapest that fits</option>
               <option value="Standard">Standard — permanent, 90% UV</option>
               <option value="Extreme">Extreme — 285 GSM, reinforced for wind</option>
@@ -78,7 +89,7 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
         </div>
         <div style={{ marginTop: 14 }}>
           <Field label="Do you need support poles installed?">
-            <select value={poles ? "yes" : "no"} onChange={(e) => setPoles(e.target.value === "yes")} style={inp} id="q_poles">
+            <select value={poles ? "yes" : "no"} onChange={(e) => { trackStart(); setPoles(e.target.value === "yes"); }} style={inp} id="q_poles">
               <option value="yes">Yes — free-standing (poles)</option>
               <option value="no">No — fix to existing walls</option>
             </select>
@@ -92,7 +103,9 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
             {FABRIC_COLOURS.map((c) => (
               <button
                 key={c.name}
-                onClick={() => setColour(c.name)}
+                onClick={() => { trackStart(); setColour(c.name); }}
+                type="button"
+                aria-pressed={colour === c.name}
                 title={c.name}
                 style={{
                   flex: 1,
@@ -183,18 +196,35 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
 
         {showForm && sent !== "done" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 4 }}>
-            {(["name", "email", "phone", "suburb"] as const).map((k) => (
-              <input
-                key={k}
-                placeholder={k === "suburb" ? "Suburb" : k[0].toUpperCase() + k.slice(1)}
-                value={contact[k]}
-                onChange={(e) => setContact({ ...contact, [k]: e.target.value })}
-                style={{ ...inp, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}
-              />
+            <div className="visually-hidden" aria-hidden="true">
+              <label htmlFor="quote-website">Website</label>
+              <input id="quote-website" tabIndex={-1} autoComplete="off" value={contact.website} onChange={(e) => setContact({ ...contact, website: e.target.value })} />
+            </div>
+            {([
+              ["name", "Name", "name", "text"],
+              ["email", "Email", "email", "email"],
+              ["phone", "Phone", "tel", "tel"],
+              ["suburb", "Suburb", "address-level2", "text"],
+            ] as const).map(([key, label, autoComplete, type]) => (
+              <label key={key} htmlFor={`quote-${key}`} style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
+                {label}{(key === "name" || key === "email") ? " *" : ""}
+                <input
+                  id={`quote-${key}`}
+                  name={key}
+                  type={type}
+                  required={key === "name" || key === "email"}
+                  autoComplete={autoComplete}
+                  value={contact[key]}
+                  onChange={(e) => setContact({ ...contact, [key]: e.target.value })}
+                  style={{ ...inp, marginTop: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.24)", color: "#fff" }}
+                />
+              </label>
             ))}
-            <button className="btn-brass" disabled={sent === "sending" || !contact.name || !contact.email} style={{ width: "100%", opacity: sent === "sending" || !contact.name || !contact.email ? 0.6 : 1 }} onClick={submit}>
+            {error && <p role="alert" style={{ margin: 0, color: "#ffcac4", fontSize: 12.5 }}>{error}</p>}
+            <button type="button" className="btn-brass" disabled={sent === "sending" || !contact.name || !contact.email} style={{ width: "100%", opacity: sent === "sending" || !contact.name || !contact.email ? 0.6 : 1 }} onClick={submit}>
               {sent === "sending" ? "Sending…" : "Send me this estimate →"}
             </button>
+            <p style={{ margin: 0, color: "var(--color-silver)", fontSize: 11, textAlign: "center" }}>No spam. We use these details only for your estimate and follow-up.</p>
           </div>
         )}
 

@@ -8,7 +8,7 @@ import { getDB } from "@/lib/db";
 import { ratesFromPricing } from "@/lib/quote-engine";
 import { zar } from "@/lib/format";
 import { readBlockMeta, readBlockItems } from "@/lib/page-blocks";
-import { absUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
+import { absUrl, gatewayEnabled, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 
 // Default content — overridden by CMS blocks from /admin/content → Page Blocks
 const D_TESTIMONIALS = [
@@ -59,7 +59,13 @@ export default async function Home() {
   const stats = readBlockItems(db, "home_stats") ?? D_STATS;
   const usps = readBlockItems(db, "home_usps") ?? D_USPS;
   const testimonials = readBlockItems(db, "home_testimonials") ?? D_TESTIMONIALS;
-  const faqs = readBlockItems(db, "home_faq") ?? D_FAQS;
+  const configuredFaqs = readBlockItems(db, "home_faq") ?? D_FAQS;
+  const onlineGateway = gatewayEnabled(s);
+  const faqs = (configuredFaqs as { q: string; a: string }[]).map((item) =>
+    !onlineGateway && item.q.toLowerCase().includes("deposit")
+      ? { ...item, a: `A ${s.deposit_pct}% deposit secures the sale and books your install, paid by EFT using the invoice number as reference. The balance is due on completion of installation.` }
+      : item
+  );
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -158,7 +164,7 @@ export default async function Home() {
         {/* trust strip */}
         <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", background: "rgba(0,0,0,.15)" }}>
           <div style={{ maxWidth: 1240, margin: "0 auto", padding: "16px 28px", display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center", fontSize: 13, color: "var(--color-silver)", letterSpacing: ".02em" }}>
-            <span>★ Owner-run, Cape Town</span><span>★ Galvanised &amp; stainless fittings</span><span>★ Wind-rated tensioning</span><span>★ PayFast secure deposits</span>
+            <span>★ Owner-run, Cape Town</span><span>★ Galvanised &amp; stainless fittings</span><span>★ Wind-rated tensioning</span><span>★ {onlineGateway ? "Secure online or EFT deposits" : "Straightforward EFT deposits"}</span>
           </div>
         </div>
       </section>
@@ -267,7 +273,7 @@ export default async function Home() {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h2 className="display reveal" style={{ fontSize: 28, color: "var(--color-navy)", marginBottom: 28 }}>From estimate to shade in five steps</h2>
           <div className="reveal">
-            <ProcessTimeline />
+            <ProcessTimeline paymentDescription={`A ${s.deposit_pct}% deposit by ${onlineGateway ? "secure online payment or EFT" : "EFT"} secures the sale and books your installation date. You'll get the date by email.`} />
           </div>
         </div>
       </section>

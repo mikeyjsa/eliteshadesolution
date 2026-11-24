@@ -1,17 +1,22 @@
 import { cookies } from "next/headers";
 import { getDB } from "./db";
 import type { AdminUser } from "./types";
+import { createHmac } from "crypto";
+import { verifyPassword } from "./passwords";
 
 const COOKIE = "es_admin";
 const COOKIE_USER = "es_uid";
 
-// Per-user auth. Falls back to the shared legacy password for backward compat.
+// Per-user auth. The shared owner password remains a backwards-compatible
+// fallback, but all stored values are migrated to salted hashes by the DB layer.
 export async function findUser(email: string, password: string): Promise<AdminUser | null> {
   const db = await getDB();
   const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.active);
-  if (user && user.password === password) return user;
-  // Legacy shared password fallback (owner account)
-  if (password === db.settings.admin_password) return db.users[0] ?? null;
+  if (user && verifyPassword(password, user.password)) return user;
+  const owner = db.users.find((candidate) => candidate.active && candidate.role === "admin");
+  if (owner && owner.email.toLowerCase() === email.toLowerCase() && verifyPassword(password, db.settings.admin_password)) {
+    return owner;
+  }
   return null;
 }
 
@@ -37,10 +42,10 @@ export async function currentUser(): Promise<AdminUser | null> {
 }
 
 export function sessionToken(userId: string, password: string): string {
-  let h = 0;
-  const s = "es:" + userId + ":" + password;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return "es" + Math.abs(h).toString(36);
+  const secret = process.env.AUTH_SECRET || process.env.ELITE_DB_PASSPHRASE || password;
+  return createHmac("sha256", secret)
+    .update(`elite-shade:${userId}:${password}`)
+    .digest("base64url");
 }
 
 export { COOKIE, COOKIE_USER };

@@ -15,7 +15,7 @@ export default async function SettingsPage() {
     <>
       <AdminHead eyebrow="Configure" title="Settings" />
       <div style={{ padding: 28 }}>
-        <SettingsForm settings={db.settings} emails={db.emails} />
+        <SettingsForm settings={{ ...db.settings, admin_password: "" }} emails={db.emails} />
       </div>
     </>
   );

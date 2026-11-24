@@ -11,6 +11,7 @@ import type {
   Team,
 } from "./types";
 import { calcQuote, ratesFromPricing } from "./quote-engine";
+import { randomBytes } from "crypto";
 
 function isoDaysAgo(d: number): string {
   return new Date(Date.now() - d * 86400000).toISOString();
@@ -335,9 +336,11 @@ export function seedDB(): DB {
     })
   );
 
+  const production = process.env.NODE_ENV === "production";
+  const ownerPassword = process.env.ELITE_ADMIN_PASSWORD || (production ? randomBytes(32).toString("base64url") : "eliteshade");
   const users: AdminUser[] = [
-    { id: "usr_0001", name: "Owner", email: "owner@eliteshade.co.za", password: "eliteshade", role: "admin", active: true, receive_admin_notifications: true, created_at: isoDaysAgo(60) },
-    { id: "usr_0002", name: "Partner", email: "partner@eliteshade.co.za", password: "partner123", role: "manager", active: true, receive_admin_notifications: true, created_at: isoDaysAgo(30) },
+    { id: "usr_0001", name: "Owner", email: process.env.ELITE_ADMIN_EMAIL || "owner@eliteshade.co.za", password: ownerPassword, role: "admin", active: true, receive_admin_notifications: true, created_at: isoDaysAgo(60) },
+    ...(!production ? [{ id: "usr_0002", name: "Partner", email: "partner@eliteshade.co.za", password: "partner123", role: "manager" as const, active: true, receive_admin_notifications: true, created_at: isoDaysAgo(30) }] : []),
   ];
 
   return {
@@ -360,7 +363,7 @@ export function seedDB(): DB {
     activities: [],
     notifications: [],
     content,
-    settings: SETTINGS,
+    settings: { ...SETTINGS, admin_password: ownerPassword },
     users,
     emails: [],
     mailing_lists: [],

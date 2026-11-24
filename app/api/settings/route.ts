@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mutate } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
 
 export async function PATCH(req: NextRequest) {
+  const me = await currentUser();
+  if (!me || me.role !== "admin") return NextResponse.json({ error: "Admin only" }, { status: 403 });
   const body = await req.json();
   await mutate((db) => {
     const s = db.settings;
@@ -20,7 +23,6 @@ export async function PATCH(req: NextRequest) {
       "marketing_name",
       "marketing_role",
       "marketing_phone",
-      "admin_password",
       "ga_property_id",
       "ga_service_account_email",
       "ga_service_account_private_key",
@@ -31,6 +33,7 @@ export async function PATCH(req: NextRequest) {
       "paygate_notify_url",
     ] as const;
     for (const k of str) if (typeof body[k] === "string") s[k] = body[k];
+    // The legacy shared password is intentionally no longer editable in Settings.
     // resend key may be set OR cleared (empty string switches back to Outbox-only)
     if (typeof body.resend_api_key === "string") s.resend_api_key = body.resend_api_key.trim();
     if (typeof body.ga_measurement_id === "string") s.ga_measurement_id = body.ga_measurement_id.trim();

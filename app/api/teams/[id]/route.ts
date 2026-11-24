@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mutate } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { id } = await params;
 
   await mutate((db) => {

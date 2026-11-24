@@ -10,10 +10,14 @@ export default async function Dashboard() {
   const db = await getDB();
   const quotes = db.quotes;
   const open = quotes.filter((q) => q.status !== "installed");
-  const paidInvoices = db.invoices.filter((i) => i.status === "paid");
-  const revenue = paidInvoices.reduce((s, i) => s + i.amount, 0);
   const outstanding = db.invoices.filter((i) => i.status === "unpaid").reduce((s, i) => s + i.amount, 0);
   const newLeads = quotes.filter((q) => q.status === "new").length;
+  const staleLeads = quotes.filter((q) => {
+    if (q.archived || !["new", "following_up"].includes(q.status)) return false;
+    return Date.now() - new Date(q.updated_at || q.created_at).getTime() > 2 * 86400000;
+  });
+  const progressed = quotes.filter((q) => ["confirmed", "deposit_paid", "scheduled", "installed"].includes(q.status)).length;
+  const conversionRate = quotes.length ? Math.round((progressed / quotes.length) * 100) : 0;
   const weekAhead = db.installations.filter((i) => {
     const d = new Date(i.scheduled_date).getTime();
     return d >= Date.now() && d <= Date.now() + 7 * 86400000;
@@ -21,9 +25,9 @@ export default async function Dashboard() {
   const cust = (id: string) => db.customers.find((c) => c.id === id);
 
   const kpis = [
-    { label: "New leads", value: newLeads, sub: "awaiting first call", accent: true },
+    { label: "New leads", value: newLeads, sub: staleLeads.length ? `${staleLeads.length} overdue follow-up` : "awaiting first call", accent: true },
     { label: "Open pipeline", value: open.length, sub: "live jobs" },
-    { label: "Revenue collected", value: zar(revenue), sub: `${paidInvoices.length} payments` },
+    { label: "Lead progression", value: `${conversionRate}%`, sub: "confirmed or beyond" },
     { label: "Outstanding", value: zar(outstanding), sub: "unpaid invoices" },
   ];
 
@@ -69,6 +73,9 @@ export default async function Dashboard() {
             {newLeads > 0 && (
               <TaskRow tone="brass" title={`${newLeads} new quote${newLeads > 1 ? "s" : ""} to follow up`} sub="Call before the lead goes cold" href="/admin/leads" />
             )}
+            {staleLeads.length > 0 && (
+              <TaskRow tone="steel" title={`${staleLeads.length} follow-up${staleLeads.length > 1 ? "s" : ""} overdue`} sub="No update recorded in the last 48 hours" href="/admin/leads" />
+            )}
             {weekAhead.length === 0 && newLeads === 0 && <p style={{ color: "var(--color-steel)", fontSize: 14 }}>Nothing urgent. Nice and quiet.</p>}
             {weekAhead.map((i) => {
               const q = quotes.find((x) => x.id === i.quote_id);
@@ -84,8 +91,26 @@ export default async function Dashboard() {
             })}
           </div>
         </div>
+
+        <div className="card" style={{ marginTop: 20, padding: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 14 }}>
+            <div>
+              <h3 className="display" style={{ fontSize: 17, color: "var(--color-navy)", margin: 0 }}>Recent activity</h3>
+              <p style={{ fontSize: 12.5, color: "var(--color-steel)", margin: "4px 0 0" }}>The latest customer and team actions across the CRM.</p>
+            </div>
+            <Link href="/admin/notifications" style={{ color: "var(--color-navy)", fontSize: 12.5, fontWeight: 700 }}>View notifications →</Link>
+          </div>
+          {db.activities.length === 0 && <p style={{ color: "var(--color-steel)", fontSize: 14 }}>Activity will appear here as leads move through the pipeline.</p>}
+          {db.activities.slice(0, 6).map((activity) => (
+            <Link key={activity.id} href={activity.quote_id ? `/admin/quotes/${activity.quote_id}` : "/admin/leads"} style={{ display: "grid", gridTemplateColumns: "110px 1fr auto", gap: 14, padding: "10px 0", borderTop: "1px solid var(--color-mist)", textDecoration: "none", alignItems: "center" }} className="es-activity-row">
+              <span style={{ fontSize: 12, color: "var(--color-steel)" }}>{dateZA(activity.created_at)}</span>
+              <span style={{ fontSize: 13.5, color: "var(--color-navy)" }}>{activity.message}</span>
+              <span style={{ fontSize: 12, color: "var(--color-steel)" }}>{activity.user}</span>
+            </Link>
+          ))}
+        </div>
       </div>
-      <style>{`@media (max-width:900px){ .es-kpi{ grid-template-columns:1fr 1fr !important; } .es-2col{ grid-template-columns:1fr !important; } }`}</style>
+      <style>{`@media (max-width:900px){ .es-kpi{ grid-template-columns:1fr 1fr !important; } .es-2col{ grid-template-columns:1fr !important; } } @media (max-width:620px){ .es-kpi{ grid-template-columns:1fr !important; } .es-activity-row{ grid-template-columns:1fr !important; gap:3px !important; } }`}</style>
     </>
   );
 }

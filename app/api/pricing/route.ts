@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mutate, uid } from "@/lib/db";
 import type { PricingRate } from "@/lib/types";
+import { currentUser } from "@/lib/auth";
 
 // Add a custom rate item (available as a quick-add line item on quotes).
 export async function POST(req: NextRequest) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { label, unit, rate } = await req.json();
   if (!label) return NextResponse.json({ error: "Label required" }, { status: 400 });
   const item: PricingRate = await mutate((db) => {
@@ -16,6 +18,7 @@ export async function POST(req: NextRequest) {
 
 // Remove a custom rate item (built-in keys are protected).
 export async function DELETE(req: NextRequest) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { key } = await req.json();
   await mutate((db) => {
     const it = db.pricing.find((p) => p.key === key);
@@ -26,6 +29,7 @@ export async function DELETE(req: NextRequest) {
 
 // Update editable rates and/or deposit %. These flow straight into live quotes.
 export async function PATCH(req: NextRequest) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const body = await req.json();
   await mutate((db) => {
     if (Array.isArray(body.rates)) {

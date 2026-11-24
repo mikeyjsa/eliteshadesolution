@@ -21,7 +21,8 @@ export default function Login() {
     });
     if (res.ok) router.push("/admin");
     else {
-      setErr("Incorrect email or password");
+      const data = await res.json().catch(() => ({}));
+      setErr(data.error || "Incorrect email or password");
       setBusy(false);
     }
   }
@@ -30,26 +31,34 @@ export default function Login() {
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#1c2733,#283746)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <form onSubmit={submit} style={{ background: "#fff", borderRadius: 18, padding: "38px 34px", width: "100%", maxWidth: 380, boxShadow: "var(--shadow-lift)" }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <Image src="/logo.png" alt="Elite Shade" width={180} height={120} style={{ width: 150, height: "auto" }} />
+          <Image src="/logo.png" alt="Elite Shade" width={180} height={120} loading="eager" style={{ width: 150, height: "auto" }} />
         </div>
         <h1 className="display" style={{ fontSize: 20, color: "var(--color-navy)", textAlign: "center", marginBottom: 4 }}>Staff sign-in</h1>
         <p style={{ textAlign: "center", color: "var(--color-steel)", fontSize: 13, marginBottom: 22 }}>Invite-only — owners and managers only.</p>
+        <label htmlFor="admin-email" style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--color-navy)", marginBottom: 5 }}>Email</label>
         <input
+          id="admin-email"
+          name="email"
           type="email"
+          autoComplete="username"
           autoFocus
-          placeholder="Email"
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={{ width: "100%", fontSize: 15, padding: "12px 14px", border: "1px solid var(--color-line)", borderRadius: 10, marginBottom: 10 }}
         />
+        <label htmlFor="admin-password" style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--color-navy)", marginBottom: 5 }}>Password</label>
         <input
+          id="admin-password"
+          name="password"
           type="password"
-          placeholder="Password"
+          autoComplete="current-password"
+          required
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           style={{ width: "100%", fontSize: 15, padding: "12px 14px", border: "1px solid var(--color-line)", borderRadius: 10, marginBottom: 12 }}
         />
-        {err && <p style={{ color: "#a23c34", fontSize: 13, margin: "0 0 12px" }}>{err}</p>}
+        {err && <p role="alert" style={{ color: "#a23c34", fontSize: 13, margin: "0 0 12px" }}>{err}</p>}
         <button className="btn-brass" disabled={busy} style={{ width: "100%" }}>{busy ? "Checking…" : "Sign in →"}</button>
       </form>
     </div>

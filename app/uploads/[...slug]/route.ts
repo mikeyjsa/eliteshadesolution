@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 import { UPLOADS_DIR } from "@/lib/storage-paths";
+import { currentUser } from "@/lib/auth";
 
 const MIME_BY_EXT: Record<string, string> = {
   ".pdf": "application/pdf",
@@ -12,6 +13,7 @@ const MIME_BY_EXT: Record<string, string> = {
 };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { slug } = await params;
   const rel = slug.join("/");
   const full = path.resolve(UPLOADS_DIR, rel);

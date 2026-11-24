@@ -21,6 +21,7 @@ function stamp(d = new Date()) {
 }
 
 function backupPath(id: string) {
+  if (!/^[a-z0-9_-]+$/i.test(id)) throw new Error("Invalid backup id");
   return path.join(BACKUP_DIR, `${id}${BACKUP_EXT}`);
 }
 

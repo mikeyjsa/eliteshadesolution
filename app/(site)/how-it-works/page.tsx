@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CoverageDiagram, UVDial } from "@/components/Illustrations";
 import { FAQ } from "@/components/Interactive";
 import { PageHero, PhotoFrame, SITE_PHOTOS } from "@/components/SitePhotos";
+import { getDB } from "@/lib/db";
+import { gatewayEnabled } from "@/lib/site";
 
 export const metadata = {
   title: "How it works",
@@ -9,11 +11,11 @@ export const metadata = {
   alternates: { canonical: "/how-it-works" },
 };
 
-const STEPS = [
+const BASE_STEPS = [
   ["Instant online estimate", "Enter the area you want shaded and your fixings. Our calculator auto-matches the best genuine Kalahari net and returns a real price range in seconds — no callback, no waiting."],
   ["We confirm with you", "One of the two owners calls to confirm the details and book a free Cape Metro site survey. Real fixings, ground conditions and access vary — this is how we lock an exact price."],
   ["Firm quote", "You receive a numbered, VAT-ready branded quote with the final price. No surprises, no mystery line items."],
-  ["50% deposit secures it", "Pay your deposit securely via PayFast (card, EFT, Instant EFT or SnapScan). That triggers ordering and books your installation date."],
+  ["Deposit secures it", "Pay your deposit to trigger ordering and book your installation date."],
   ["Engineered installation", "We install with galvanised posts, stainless fittings and correct tensioning — built for the Southeaster. The 50% balance is due on completion."],
 ];
 
@@ -24,7 +26,13 @@ const NET_FAQ = [
   { q: "What colours are available?", a: "Black, Charcoal, Sand and Silver, at no price difference. Darker colours read more architectural and hide dust; lighter colours stay cooler underneath and brighten a space." },
 ];
 
-export default function HowItWorks() {
+export default async function HowItWorks() {
+  const db = await getDB();
+  const onlineGateway = gatewayEnabled(db.settings);
+  const steps = BASE_STEPS.map((step, index) => index === 3
+    ? [`${db.settings.deposit_pct}% deposit secures it`, `Pay your deposit ${onlineGateway ? "securely online or by EFT" : "by EFT using your invoice number as reference"}. That triggers ordering and books your installation date.`]
+    : step
+  );
   return (
     <>
       <PageHero
@@ -40,11 +48,11 @@ export default function HowItWorks() {
         <div style={{ maxWidth: 820, margin: "0 auto" }}>
           <span className="eyebrow">Step by step</span>
           <h2 className="display" style={{ fontSize: 28, color: "var(--color-navy)", margin: "8px 0 30px" }}>From estimate to shade</h2>
-          {STEPS.map(([t, d], i) => (
-            <div key={t} style={{ display: "flex", gap: 22, paddingBottom: i < STEPS.length - 1 ? 36 : 0 }} className="reveal">
+          {steps.map(([t, d], i) => (
+            <div key={t} style={{ display: "flex", gap: 22, paddingBottom: i < steps.length - 1 ? 36 : 0 }} className="reveal">
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <div className="display" style={{ width: 48, height: 48, borderRadius: 12, background: "var(--color-navy)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{i + 1}</div>
-                {i < STEPS.length - 1 && <div style={{ width: 2, flex: 1, background: "var(--color-line)", marginTop: 6 }} />}
+                {i < steps.length - 1 && <div style={{ width: 2, flex: 1, background: "var(--color-line)", marginTop: 6 }} />}
               </div>
               <div style={{ paddingBottom: 8 }}>
                 <h3 className="display" style={{ fontSize: 20, color: "var(--color-navy)", margin: "8px 0 6px" }}>{t}</h3>

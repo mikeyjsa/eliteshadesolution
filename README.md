@@ -7,7 +7,7 @@ business blueprint (`../Elite-Shade-Solutions-Business-Blueprint.html`).
 
 ## Stack
 
-- **Next.js 15** (App Router) + React 19 + TypeScript
+- **Next.js 16** (App Router) + React 19 + TypeScript
 - **Tailwind v4** (`@theme` tokens) + custom CSS — "engineered tension" design system
 - **File-based JSON store** (`.data/db.json`, auto-seeded) via `lib/db.ts` — swap to Supabase/Postgres later
 - **File-backed uploads** under `.data/uploads/`, served at `/uploads/...` — only relative file paths are stored in the DB, never binary file contents
@@ -56,7 +56,7 @@ Important:
 
 ## Admin (`/admin`)
 
-Password gate — scaffold password **`eliteshade`** (change in Settings).
+Invite-only per-user sign-in with salted password hashes. Settings, backups, and user management are restricted to administrators.
 
 - **Dashboard** — KPIs, pipeline snapshot, this-week tasks
 - **CRM Pipeline** — drag-and-drop kanban (6 stages); cards open the quote detail
@@ -68,194 +68,98 @@ Password gate — scaffold password **`eliteshade`** (change in Settings).
 - **Content (CMS)** — gallery + blog manage/publish
 - **Backups** — hourly DB snapshots with manual backup, restore and download
 - **Reports** — sales, pipeline, lead-source, most-quoted nets, operations
-- **Settings** — company/VAT, email templates, admin password
+- **Settings** — company/VAT, email delivery, analytics, payment details, and email templates
 
-## Deployment spec (Railway)
+## Production deployment: Afrihost only
 
-This app is safe to deploy on Railway via a Git-based deployment, but it needs persistent volumes because it uses local files for both the DB and uploads.
+The production website, Node.js runtime, persistent data, domain, DNS, SSL, and SMTP email are all intended to run on Afrihost. No Railway, Vercel, or second hosting platform is required.
 
-### Required Railway settings
+### Architecture
 
-Set these variables in Railway:
+- Afrihost cPanel Node.js Application Manager runs the standalone Next.js server through Passenger.
+- Afrihost cPanel Git Version Control pulls the source repository and executes `.cpanel.yml`.
+- `/home/elitesi8c1n5/public_html/www` is the live application root.
+- `/home/elitesi8c1n5/public_html/www/.data` is the persistent data folder.
+- Afrihost mailboxes provide SMTP delivery for `sales@eliteshadesolutions.co.za` and notification recipients.
+- Afrihost DNS and AutoSSL serve `https://eliteshadesolutions.co.za` as the canonical address.
+
+The Git repository must remain separate from the live application root. The cPanel repository can live under a path such as `/home/elitesi8c1n5/repositories/elite-shade`; `.cpanel.yml` publishes its prebuilt runtime into `public_html/www`.
+
+### Required Node.js application settings
+
+- Node.js version: `24.x` when available, otherwise the newest supported LTS release.
+- Application mode: `Production`.
+- Application root: `/home/elitesi8c1n5/public_html/www`.
+- Application URL: `eliteshadesolutions.co.za` with `/` as the path.
+- Application startup file: `server.js`.
+
+Do not run `npm install` or `next build` on Afrihost for normal releases. Shared-hosting build limits can terminate those processes. The committed cPanel archive already includes the standalone server, production dependencies, static assets, and public files.
+
+### Required environment variables
+
+Configure these in cPanel's Node.js Application Manager and keep their values stable:
 
 ```bash
 NODE_ENV=production
-NEXT_PUBLIC_SITE_URL=https://your-public-domain.com
+NEXT_PUBLIC_SITE_URL=https://eliteshadesolutions.co.za
 ELITE_DB_PASSPHRASE=use-a-long-random-secret
-```
-
-Optional live email overrides:
-
-```bash
+AUTH_SECRET=use-a-different-long-random-secret
+ELITE_ADMIN_EMAIL=owner-email-address
+ELITE_ADMIN_PASSWORD=set-a-strong-first-login-password
 ELITE_EMAIL_PROVIDER=smtp
-ELITE_EMAIL_FROM=sales@your-domain.co.za
-ELITE_SMTP_HOST=mail.your-domain.co.za
+ELITE_EMAIL_FROM=sales@eliteshadesolutions.co.za
+ELITE_SMTP_HOST=mail.eliteshadesolutions.co.za
 ELITE_SMTP_PORT=465
 ELITE_SMTP_SECURE=true
-ELITE_SMTP_USER=sales@your-domain.co.za
-ELITE_SMTP_PASS=your-mailbox-password
+ELITE_SMTP_USER=sales@eliteshadesolutions.co.za
+ELITE_SMTP_PASS=mailbox-password
 ```
 
-Recommended:
+`ELITE_ADMIN_EMAIL` and `ELITE_ADMIN_PASSWORD` seed only a brand-new database. Existing users are not overwritten. Changing `ELITE_DB_PASSPHRASE` without migrating the encrypted data makes the database and backups unreadable. Changing `AUTH_SECRET` signs every administrator out.
 
-- Use a long random `ELITE_DB_PASSPHRASE` and keep it stable. Changing it later without re-encrypting data will prevent the app from reading existing encrypted DB/backup files.
-- Set your final custom domain in `NEXT_PUBLIC_SITE_URL` so canonicals, sitemap, robots, and social cards point at the correct host.
-- If you plan to use SMTP from your hosting provider, keep the mailbox credentials ready for the in-app Settings screen. They are not required as environment variables.
-- For production shared-hosting deployments, environment variables can override the in-app email settings so live mail keeps working even if the runtime DB has older values.
+### Persistent data
 
-### Required persistent volume
+Only one persistent folder is needed:
 
-In Railway, mount one persistent volume to this path inside the service:
-
-- `/app/.data`
-
-Why this is enough:
-
-- `.data` holds the live DB, hourly/manual backups, and uploaded files.
-- Uploads are now stored in `.data/uploads/` and served by the app at `/uploads/...`.
-- Without this mount, deploys/restarts will lose DB, backups, and uploaded files.
-
-### Build and start commands
-
-Railway can use the default Node detection, or you can set:
-
-```bash
-npm install
-npm run build
-npm run start
+```text
+/home/elitesi8c1n5/public_html/www/.data
 ```
 
-The production start script respects Railway's `PORT` env var automatically and
-falls back to `4700` locally.
+It contains the encrypted database, hourly/manual backups, proof-of-payment files, email-marketing PDFs, and all other uploads. The deploy hook creates this folder if needed and excludes it when replacing the application runtime, so Git deployments do not remove live data.
 
-### cPanel / Passenger Node hosting
+Never delete `.data`, include it in a deployment archive, or point the Node.js application at the Git repository folder.
 
-If your host provides cPanel's Node.js Application Manager, this app can also run there as a normal Node deployment instead of as a static export.
+### First deployment
 
-Recommended deployment mode for Afrihost/cPanel:
-
-- Build locally with `npm run build:cpanel`
-- For manual deploys, upload `cpanel-deploy.tar.gz` into the live app root and extract it there
-- For Git deploys, commit the refreshed `cpanel-git-deploy.tar.gz` archive and let cPanel deploy from Git
-- Keep `.data/` in place
-- Set the startup file to `server.js`
-
-Why this is recommended:
-
-- shared hosting build memory can be unreliable for `next build`
-- the standalone build carries the exact runtime needed for the compiled app
-- deploys become a repeatable upload or Git publish flow without touching live data
-
-Recommended application settings:
-
-- Node.js version: `24.x` if available, otherwise the newest supported LTS version
-- Application mode: `Production`
-- Application root: `/home/<cpanel-user>/public_html/www`
-- Application URL: `/` for the main site, or a subdomain path if you deploy it separately
-- Application startup file: `server.js` for standalone bundles, or `app.js` only for source-based local/server builds
-
-Recommended Git layout:
-
-1. Do **not** keep the Git repository inside the live app root.
-2. Create a **cPanel-managed repository in a separate path**, for example:
-
-```bash
-/home/<cpanel-user>/repositories/elite-shade
-```
-
-3. Keep the live Node application root as:
-
-```bash
-/home/<cpanel-user>/public_html/www
-```
-
-4. Commit the included `.cpanel.yml` file to the repo. cPanel Git deployment will then copy the app from the repository into the live app root while leaving `.data/` alone.
-
-Why this matters:
-
-- If the repo lives inside `public_html/www`, the live app becomes a dirty working tree and future pulls/deploys will eventually fail.
-- If the repo lives outside the live app root, cPanel can keep the repo clean and deploy into the runtime folder safely.
-- The included `.cpanel.yml` excludes `.data/`, so DB, uploads, and backups survive deploys.
-
-First-time app bootstrap:
-
-1. Clone the repository into the separate cPanel Git path.
-2. In the Node.js app manager, point the application root at `/home/<cpanel-user>/public_html/www` and the startup file at `app.js`.
-3. Copy or deploy the app files into the live app root.
-4. Open a terminal/SSH session in the live app root and run:
-
-```bash
-npm install
-npm run build
-mkdir -p .data
-```
-
-5. Set environment variables in the app manager:
-
-```bash
-NODE_ENV=production
-NEXT_PUBLIC_SITE_URL=https://your-domain.com
-ELITE_DB_PASSPHRASE=use-a-long-random-secret
-```
-
-6. Restart the application from cPanel after changes.
-
-Ongoing deploy flow: manual archive upload
-
-1. Push to GitHub.
+1. Create the cPanel-managed Git repository outside `public_html/www` and connect it to the GitHub repository.
 2. Build locally with `npm run build:cpanel`.
-3. Upload `cpanel-deploy.tar.gz` to `/home/<cpanel-user>/public_html/www`.
-4. Extract it into the live app root and confirm `.data/` remains untouched.
-5. Restart the Node.js application from cPanel.
-6. If you also keep a clean repository in `/home/<cpanel-user>/repositories/elite-shade`, pull that repo separately for source tracking, but do not depend on cPanel Git deployment alone for the live Next.js runtime unless the host can reliably build the app on-server.
+3. Commit the source, `.cpanel.yml`, and refreshed `cpanel-git-deploy.tar.gz`, then push them.
+4. Configure the Node.js application and environment variables listed above.
+5. In cPanel Git Version Control, update from remote and select **Deploy HEAD Commit**.
+6. Confirm cPanel AutoSSL covers both the apex and `www` hostnames.
+7. Configure `www` and any old hostnames to redirect permanently to `https://eliteshadesolutions.co.za`.
+8. Restart the Node.js application once from cPanel.
 
-Ongoing deploy flow: cPanel Git deployment
+### Every later deployment
 
-1. Build locally with `npm run build:cpanel`.
-2. Confirm `cpanel-git-deploy.tar.gz` has been regenerated.
-3. Commit both your source changes and the refreshed `cpanel-git-deploy.tar.gz`.
-4. Push to GitHub.
-5. In cPanel Git Version Control, deploy the latest commit.
+1. Run `npm run test:e2e` and `npm run build:cpanel` locally.
+2. Confirm `cpanel-git-deploy.tar.gz` was regenerated.
+3. Commit the source changes and refreshed archive, then push to GitHub.
+4. In cPanel Git Version Control, update from remote and deploy the latest commit.
+5. The hook preserves `.data`, replaces the standalone runtime, and touches `tmp/restart.txt` so Passenger reloads the application.
 
-What the included Git deploy hook now does:
-
-- checks that `cpanel-git-deploy.tar.gz` exists in the repository
-- extracts it into a temporary folder under `public_html/www/tmp/`
-- `rsync --delete`s the extracted standalone runtime into the live app root
-- preserves `.data/`
-- touches `tmp/restart.txt` so Passenger reloads the app
-
-This means Git deploys no longer rely on `npm install` or `next build` running successfully on Afrihost.
-
-Important:
-
-- The writable `.data/` folder must exist in the application root.
-- Uploaded files, the JSON database, and backups all live under `.data/`.
-- The included `.cpanel.yml` explicitly preserves `.data/`.
-- If your host disables shell access, Git deployment can still work as long as the repository is clean, `.cpanel.yml` is present, and the latest `cpanel-git-deploy.tar.gz` is committed.
-- When you change the app, always rerun `npm run build:cpanel` before pushing if you want cPanel Git deploy to publish the latest runtime.
-
-### Git deploy flow
-
-1. Push this repository to GitHub.
-2. In Railway, create a new project from that repo.
-3. Add the environment variables above.
-4. Attach a persistent volume to `/app/.data`.
-5. Deploy once.
-6. Visit `/admin` and change the scaffold credentials/settings immediately.
+If cPanel Git is temporarily unavailable, upload `cpanel-deploy.tar.gz` to the live application root, extract it without deleting `.data`, and restart the application.
 
 ### Post-deploy checklist
 
-1. Confirm `.data/db.json` is created on the mounted volume.
-2. Create a manual backup in `/admin/backups` and confirm it appears.
-3. Upload a proof of payment on an invoice and confirm the file lands under `.data/uploads/payment-proofs/`.
-4. Open `https://your-domain.com/robots.txt` and `https://your-domain.com/sitemap.xml`.
-5. Verify that a social share preview uses the generated Open Graph image.
-6. In `/admin/settings`, choose your email delivery method:
-   - `SMTP` for your mailbox server
-   - `Resend` if you later move to an API-based provider
-   - `Outbox only` if you want to stage the site without live sending
-7. In `/admin/settings`, switch `Customer payment mode` to `EFT only` until your live gateway is active.
+1. Confirm `https://eliteshadesolutions.co.za` returns the site and `www` redirects to it.
+2. Confirm the browser reports a valid SSL certificate.
+3. Sign in to `/admin` and create a manual backup under `/admin/backups`.
+4. Confirm `.data/db.json`, `.data/backups/`, and `.data/uploads/` remain present.
+5. Send one controlled quote email and confirm Afrihost SMTP delivery and reply routing.
+6. Upload a proof of payment and confirm it remains available after the next deployment.
+7. Check `/robots.txt`, `/sitemap.xml`, the social sharing preview, and the Google Analytics report.
+8. Keep `Customer payment mode` set to `EFT only` until the payment gateway is active.
 
 ## Quote engine
 

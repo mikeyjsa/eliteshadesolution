@@ -149,7 +149,7 @@ export function CompareSlider() {
   const photo = SITE_PHOTOS.garden;
 
   return (
-    <div className="es-compare" style={{ position: "relative", borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow-lift)", aspectRatio: "16 / 9", minHeight: 320, userSelect: "none" }}>
+    <div className="es-compare" style={{ position: "relative", borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow-lift)", aspectRatio: "16 / 9", userSelect: "none" }}>
       {/* base — harsh sun */}
       <Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 900px) 100vw, 1040px" style={{ objectFit: "cover", filter: "saturate(1.35) brightness(1.28) contrast(1.06) sepia(.22)" }} />
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,190,80,.22), rgba(255,150,40,.12))" }} />
@@ -162,10 +162,10 @@ export function CompareSlider() {
 
       {/* labels */}
       <span style={{ position: "absolute", top: 14, left: 14, background: "rgba(28,39,51,.85)", color: "#fff", fontSize: 11.5, fontWeight: 700, fontFamily: "var(--font-display)", letterSpacing: ".06em", textTransform: "uppercase", padding: "6px 12px", borderRadius: 20, pointerEvents: "none" }}>
-      Under the sail — 90% UV blocked
+        90% UV shade
       </span>
       <span style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,.88)", color: "var(--color-warn)", fontSize: 11.5, fontWeight: 700, fontFamily: "var(--font-display)", letterSpacing: ".06em", textTransform: "uppercase", padding: "6px 12px", borderRadius: 20, pointerEvents: "none" }}>
-        Full Cape sun
+        Full sun
       </span>
 
       {/* handle */}
@@ -187,21 +187,22 @@ export function CompareSlider() {
 /* ============================================================
    3. PROCESS TIMELINE — auto-advancing, clickable 5-step rail
    ============================================================ */
-const TIMELINE_STEPS = [
+const BASE_TIMELINE_STEPS = [
   { n: "01", t: "Instant estimate", d: "Enter your area online — we match a genuine Kalahari net and show a real, itemised price range on the spot. No callback needed." },
   { n: "02", t: "We confirm", d: "A quick call or a free Cape Metro site check confirms ground conditions, access and exact fixing points." },
   { n: "03", t: "Firm quote", d: "You get a locked price on a branded invoice — in most cases inside the range the calculator showed you." },
-  { n: "04", t: "Pay deposit", d: "A 50% deposit via PayFast secures the sale and books your installation date. You'll get the date by email." },
+  { n: "04", t: "Pay deposit", d: "A 50% deposit secures the sale and books your installation date. You'll get the date by email." },
   { n: "05", t: "Installed", d: "Poles set and cured, sail tensioned into a taut hypar form that sheds the Southeaster. Balance due on completion." },
 ];
 
-export function ProcessTimeline() {
+export function ProcessTimeline({ paymentDescription }: { paymentDescription?: string }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const steps = BASE_TIMELINE_STEPS.map((step) => step.n === "04" && paymentDescription ? { ...step, d: paymentDescription } : step);
 
   useEffect(() => {
     if (paused) return;
-    const id = setInterval(() => setActive((a) => (a + 1) % TIMELINE_STEPS.length), 4000);
+    const id = setInterval(() => setActive((a) => (a + 1) % steps.length), 4000);
     return () => clearInterval(id);
   }, [paused]);
 
@@ -209,14 +210,14 @@ export function ProcessTimeline() {
     <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       {/* progress rail */}
       <div style={{ position: "relative", height: 3, background: "var(--color-line)", borderRadius: 2, marginBottom: 22 }}>
-        <div style={{ position: "absolute", inset: "0 auto 0 0", width: `${(active / (TIMELINE_STEPS.length - 1)) * 100}%`, background: "var(--color-brass)", borderRadius: 2, transition: "width .5s cubic-bezier(.22,1,.36,1)" }} />
-        {TIMELINE_STEPS.map((s, i) => (
+        <div style={{ position: "absolute", inset: "0 auto 0 0", width: `${(active / (steps.length - 1)) * 100}%`, background: "var(--color-brass)", borderRadius: 2, transition: "width .5s cubic-bezier(.22,1,.36,1)" }} />
+        {steps.map((s, i) => (
           <button
             key={s.n}
             onClick={() => setActive(i)}
             aria-label={`Step ${s.n}: ${s.t}`}
             style={{
-              position: "absolute", top: "50%", left: `${(i / (TIMELINE_STEPS.length - 1)) * 100}%`,
+              position: "absolute", top: "50%", left: `${(i / (steps.length - 1)) * 100}%`,
               transform: "translate(-50%,-50%)", width: 22, height: 22, borderRadius: "50%", cursor: "pointer",
               border: `3px solid ${i <= active ? "var(--color-brass)" : "var(--color-line)"}`,
               background: i <= active ? "var(--color-brass)" : "#fff",
@@ -229,7 +230,7 @@ export function ProcessTimeline() {
 
       {/* steps */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 0 }} className="es-steps">
-        {TIMELINE_STEPS.map((s, i) => {
+        {steps.map((s, i) => {
           const isActive = i === active;
           return (
             <button

@@ -4,10 +4,24 @@ import { sendEmail } from "@/lib/email";
 import { pushAdminNotification } from "@/lib/notifications";
 import { adminNotificationEmails, absUrl } from "@/lib/site";
 import type { Customer, Quote } from "@/lib/types";
+import { checkRateLimit, clientAddress } from "@/lib/rate-limit";
+import { cleanPublicEmail, cleanPublicMessage, cleanPublicText, isValidPublicEmail } from "@/lib/public-input";
 
 export async function POST(req: NextRequest) {
-  const f = await req.json();
-  if (!f?.name || !f?.email) return NextResponse.json({ error: "Required" }, { status: 400 });
+  const limit = checkRateLimit(`contact:${clientAddress(req)}`, 6, 60 * 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many enquiries from this connection. Please try again later." }, { status: 429 });
+  const body = await req.json();
+  if (cleanPublicText(body?.website)) return NextResponse.json({ ok: true });
+  const f = {
+    name: cleanPublicText(body?.name, 100),
+    email: cleanPublicEmail(body?.email),
+    phone: cleanPublicText(body?.phone, 40),
+    suburb: cleanPublicText(body?.suburb, 100),
+    message: cleanPublicMessage(body?.message),
+  };
+  if (!f.name || !isValidPublicEmail(f.email)) {
+    return NextResponse.json({ error: "Please enter your name and a valid email address." }, { status: 400 });
+  }
   const db = await getDB();
   const teamInboxes = adminNotificationEmails({ settings: db.settings, users: db.users });
 

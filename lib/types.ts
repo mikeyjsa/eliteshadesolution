@@ -23,7 +23,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  password: string; // plain-text for scaffold; swap bcrypt in production
+  password: string; // salted scrypt hash
   role: UserRole;
   active: boolean;
   receive_admin_notifications: boolean;
@@ -177,7 +177,7 @@ export interface Settings {
   marketing_phone?: string;
   facebook_url: string;
   instagram_url: string;
-  admin_password: string;   // legacy fallback; per-user auth takes priority
+  admin_password: string;   // legacy fallback, stored as a salted scrypt hash
   resend_api_key: string;
   ga_measurement_id: string;
   ga_property_id?: string;

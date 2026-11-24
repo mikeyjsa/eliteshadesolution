@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, mutate } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
 
 export async function GET() {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const db = await getDB();
   return NextResponse.json(db.notifications);
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!(await currentUser())) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const now = new Date().toISOString();
 

@@ -6,6 +6,7 @@ import { seedDB } from "./seed";
 import { DATA_DIR, DB_FILE } from "./storage-paths";
 import { maybeCreateHourlyBackup } from "./backups";
 import { decryptStoredText, encryptStoredText, maybeMigrateEncryptedFile } from "./data-crypto";
+import { hashPassword, isPasswordHash } from "./passwords";
 
 let memo: DB | null = null;
 let writing: Promise<void> = Promise.resolve();
@@ -23,17 +24,37 @@ function hydrate(db: DB): DB {
   return db;
 }
 
+function migratePasswordHashes(db: DB) {
+  let changed = false;
+  for (const user of db.users) {
+    if (!isPasswordHash(user.password)) {
+      user.password = hashPassword(user.password);
+      changed = true;
+    }
+  }
+  if (db.settings.admin_password && !isPasswordHash(db.settings.admin_password)) {
+    db.settings.admin_password = hashPassword(db.settings.admin_password);
+    changed = true;
+  }
+  return changed;
+}
+
 async function ensure(): Promise<DB> {
   if (memo) return memo;
   try {
     const raw = await fs.readFile(DB_FILE, "utf8");
     memo = hydrate(JSON.parse(decryptStoredText(raw)) as DB);
+    if (migratePasswordHashes(memo)) {
+      await fs.writeFile(DB_FILE, encryptStoredText(JSON.stringify(memo, null, 2)), "utf8");
+    }
     await maybeMigrateEncryptedFile(
       () => fs.readFile(DB_FILE, "utf8"),
       (content) => fs.writeFile(DB_FILE, content, "utf8")
     );
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     memo = hydrate(seedDB());
+    migratePasswordHashes(memo);
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(DB_FILE, encryptStoredText(JSON.stringify(memo, null, 2)), "utf8");
   }

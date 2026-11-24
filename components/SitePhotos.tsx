@@ -188,6 +188,7 @@ export function PhotoFrame({
         alt={alt || photo.alt}
         fill
         priority={priority}
+        loading={priority ? "eager" : "lazy"}
         sizes={sizes}
         style={{ objectFit: "cover", ...imageStyle }}
       />
