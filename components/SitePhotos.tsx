@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 
 export const SITE_PHOTOS = {
@@ -97,6 +96,30 @@ export const PHOTO_CREDIT_LINKS = [
 
 type Photo = (typeof SITE_PHOTOS)[keyof typeof SITE_PHOTOS];
 
+export function SitePhotoImage({
+  photo, alt, priority, sizes, style,
+}: {
+  photo: Photo;
+  alt?: string;
+  priority?: boolean;
+  sizes: string;
+  style?: CSSProperties;
+}) {
+  const name = photo.src.slice("/site-photos/".length, -4);
+  const base = `/site-images/${name}`;
+  return (
+    <img
+      alt={alt ?? photo.alt}
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
+      sizes={sizes}
+      srcSet={`${base}-640.webp 640w, ${base}-1080.webp 1080w, ${base}-1600.webp 1600w`}
+      src={`${base}-1080.webp`}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", ...style }}
+    />
+  );
+}
+
 export function PageHero({
   photo,
   eyebrow,
@@ -121,10 +144,8 @@ export function PageHero({
         color: "#fff",
       }}
     >
-      <Image
-        src={photo.src}
-        alt={photo.alt}
-        fill
+      <SitePhotoImage
+        photo={photo}
         priority
         sizes="100vw"
         style={{ objectFit: "cover", objectPosition }}
@@ -183,12 +204,10 @@ export function PhotoFrame({
         ...style,
       }}
     >
-      <Image
-        src={photo.src}
-        alt={alt || photo.alt}
-        fill
+      <SitePhotoImage
+        photo={photo}
+        alt={alt}
         priority={priority}
-        loading={priority ? "eager" : "lazy"}
         sizes={sizes}
         style={{ objectFit: "cover", ...imageStyle }}
       />

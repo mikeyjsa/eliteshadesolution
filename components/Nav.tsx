@@ -46,12 +46,13 @@ export default function Nav() {
       >
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
           <Image
-            src="/logo.png"
+            src="/site-images/logo.webp"
             alt="Elite Shade Solutions"
             width={210}
             height={140}
             style={{ height: 74, width: "auto" }}
-            priority
+            loading="eager"
+            unoptimized
             className="es-logo"
           />
         </Link>

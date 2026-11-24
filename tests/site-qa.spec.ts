@@ -3,6 +3,15 @@ import { expect, test } from "@playwright/test";
 const publicRoutes = ["/", "/quote", "/shade-sails", "/how-it-works", "/gallery", "/blog", "/about", "/contact"];
 
 test.describe("public site", () => {
+  test("mobile hero loads a static responsive image", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    const hero = page.getByRole("img", { name: /large cream shade sail/i }).first();
+    await expect.poll(() => hero.evaluate((img: HTMLImageElement) =>
+      img.naturalWidth > 0 ? new URL(img.currentSrc).pathname : ""
+    )).toBe("/site-images/hero-house-sail-640.webp");
+  });
+
   for (const route of publicRoutes) {
     test(`${route} renders without horizontal overflow on mobile`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });

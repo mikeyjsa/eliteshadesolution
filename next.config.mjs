@@ -31,6 +31,9 @@ const nextConfig = {
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
       ],
+    }, {
+      source: "/site-images/:file",
+      headers: [{ key: "Cache-Control", value: "public, max-age=86400" }],
     }];
   },
 };

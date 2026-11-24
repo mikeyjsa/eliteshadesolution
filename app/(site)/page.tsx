@@ -144,11 +144,11 @@ export default async function Home() {
               ))}
             </div>
           </div>
-          <div className="hero-parallax" style={{ position: "relative", animation: "fade-in-up 0.9s ease 0.3s both" }}>
+          <div className="hero-parallax" style={{ position: "relative" }}>
             <PhotoFrame
               photo={SITE_PHOTOS.heroHouse}
               priority
-              sizes="(max-width: 900px) 100vw, 46vw"
+              sizes="(max-width: 900px) 100vw, (max-width: 1240px) 46vw, 570px"
               style={{ minHeight: 480, borderRadius: 16, boxShadow: "0 24px 60px rgba(0,0,0,.45)" }}
               overlay="linear-gradient(180deg, rgba(18,26,35,0.04) 0%, rgba(18,26,35,0.38) 100%)"
             >

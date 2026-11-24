@@ -13,10 +13,18 @@ type Envelope = {
   data: string;
 };
 
+let derivedKey: { passphrase: string; key: Buffer } | undefined;
+
 function getKey(): Buffer | null {
   const passphrase = process.env[KEY_ENV];
-  if (!passphrase) return null;
-  return scryptSync(passphrase, SALT, 32);
+  if (!passphrase) {
+    derivedKey = undefined;
+    return null;
+  }
+  if (derivedKey?.passphrase !== passphrase) {
+    derivedKey = { passphrase, key: scryptSync(passphrase, SALT, 32) };
+  }
+  return derivedKey.key;
 }
 
 function parseEnvelope(raw: string): Envelope | null {
@@ -39,7 +47,7 @@ function parseEnvelope(raw: string): Envelope | null {
 }
 
 export function isEncryptionEnabled() {
-  return Boolean(getKey());
+  return Boolean(process.env[KEY_ENV]);
 }
 
 export function isEncryptedPayload(raw: string) {

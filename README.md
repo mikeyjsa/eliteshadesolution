@@ -142,6 +142,11 @@ Never delete `.data`, include it in a deployment archive, or point the Node.js a
 
 ### Every later deployment
 
+The responsive WebP variants in `public/site-images/` are committed and included in
+the cPanel bundle. After changing a bundled photo or logo, run
+`node scripts/build-site-images.mjs` locally with `cwebp` installed and commit
+the refreshed variants. Afrihost does not need the encoder.
+
 1. Run `npm run test:e2e` and `npm run build:cpanel` locally.
 2. Confirm `cpanel-git-deploy.tar.gz` was regenerated.
 3. Commit the source changes and refreshed archive, then push to GitHub.

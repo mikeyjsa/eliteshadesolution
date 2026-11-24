@@ -74,13 +74,23 @@ export async function createBackup(snapshot: DB | string, reason: BackupFileMeta
   } satisfies BackupFileMeta;
 }
 
-export async function maybeCreateHourlyBackup(snapshot: DB | string) {
-  const backups = await listBackups();
-  const lastHourly = backups.find((b) => b.reason === "hourly");
-  if (lastHourly && Date.now() - +new Date(lastHourly.created_at) < BACKUP_INTERVAL_MS) {
-    return null;
-  }
-  return createBackup(snapshot, "hourly");
+let nextBackupCheck = 0;
+let backupCheck: Promise<void> | undefined;
+
+export async function maybeCreateHourlyBackup(snapshot: DB | string): Promise<void> {
+  if (Date.now() < nextBackupCheck) return;
+  backupCheck ??= (async () => {
+    await ensureBackupDir();
+    const now = Date.now();
+    const cutoff = `hourly__${stamp(new Date(now - BACKUP_INTERVAL_MS))}${BACKUP_EXT}`;
+    const files = await fs.readdir(BACKUP_DIR);
+    if (!files.some((file) => /^hourly__\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(file) && file > cutoff)) {
+      await createBackup(snapshot, "hourly");
+    }
+    // Other workers may have made the latest backup; periodically recheck disk.
+    nextBackupCheck = now + 60_000;
+  })().finally(() => { backupCheck = undefined; });
+  await backupCheck;
 }
 
 export async function readBackup(id: string) {

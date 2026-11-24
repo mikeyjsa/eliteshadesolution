@@ -5,7 +5,7 @@ import type { DB } from "./types";
 import { seedDB } from "./seed";
 import { DATA_DIR, DB_FILE } from "./storage-paths";
 import { maybeCreateHourlyBackup } from "./backups";
-import { decryptStoredText, encryptStoredText, maybeMigrateEncryptedFile } from "./data-crypto";
+import { decryptStoredText, encryptStoredText, isEncryptedPayload, isEncryptionEnabled } from "./data-crypto";
 import { hashPassword, isPasswordHash } from "./passwords";
 
 let writing: Promise<void> = Promise.resolve();
@@ -39,6 +39,14 @@ function migratePasswordHashes(db: DB) {
     changed = true;
   }
   return changed;
+}
+
+async function readSnapshot() {
+  const raw = await fs.readFile(DB_FILE, "utf8");
+  return {
+    db: hydrate(JSON.parse(decryptStoredText(raw)) as DB),
+    needsEncryption: isEncryptionEnabled() && !isEncryptedPayload(raw),
+  };
 }
 
 async function readDB(): Promise<DB> {
@@ -80,20 +88,16 @@ async function acquireFileLock(): Promise<() => Promise<void>> {
 
 async function ensure(): Promise<DB> {
   try {
-    let db = await readDB();
-    if (migratePasswordHashes(db)) {
+    let { db, needsEncryption } = await readSnapshot();
+    if (needsEncryption || migratePasswordHashes(db)) {
       const release = await acquireFileLock();
       try {
-        db = await readDB();
-        if (migratePasswordHashes(db)) await writeDB(db);
+        ({ db, needsEncryption } = await readSnapshot());
+        if (migratePasswordHashes(db) || needsEncryption) await writeDB(db);
       } finally {
         await release();
       }
     }
-    await maybeMigrateEncryptedFile(
-      () => fs.readFile(DB_FILE, "utf8"),
-      (content) => fs.writeFile(DB_FILE, content, "utf8")
-    );
     await maybeCreateHourlyBackup(db);
     return db;
   } catch (error) {

@@ -3,12 +3,11 @@
    passive animation system in AnimationLayer.tsx. All match the
    "engineered tension" identity: navy/brass, technical, no gimmicks. */
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { calcQuote, type Rates } from "@/lib/quote-engine";
 import { zar } from "@/lib/format";
 import { FABRIC_COLOURS, type FabricColour } from "@/lib/types";
-import { SITE_PHOTOS } from "@/components/SitePhotos";
+import { SITE_PHOTOS, SitePhotoImage } from "@/components/SitePhotos";
 
 /* ============================================================
    1. MINI ESTIMATOR — sliders + live sail plan-view + real price
@@ -151,12 +150,12 @@ export function CompareSlider() {
   return (
     <div className="es-compare" style={{ position: "relative", borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow-lift)", aspectRatio: "16 / 9", userSelect: "none" }}>
       {/* base — harsh sun */}
-      <Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 900px) 100vw, 1040px" style={{ objectFit: "cover", filter: "saturate(1.35) brightness(1.28) contrast(1.06) sepia(.22)" }} />
+      <SitePhotoImage photo={photo} sizes="(max-width: 900px) 100vw, 1040px" style={{ filter: "saturate(1.35) brightness(1.28) contrast(1.06) sepia(.22)" }} />
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,190,80,.22), rgba(255,150,40,.12))" }} />
 
       {/* top — under the sail, clipped to the left portion */}
       <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${100 - pct}% 0 0)` }}>
-        <Image src={photo.src} alt="" fill sizes="(max-width: 900px) 100vw, 1040px" style={{ objectFit: "cover" }} />
+        <SitePhotoImage photo={photo} alt="" sizes="(max-width: 900px) 100vw, 1040px" />
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(28,39,51,.16), rgba(28,39,51,.06))" }} />
       </div>
 

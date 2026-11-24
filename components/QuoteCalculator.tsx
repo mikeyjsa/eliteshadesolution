@@ -1,12 +1,11 @@
 "use client";
-import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { calcQuote, type Rates } from "@/lib/quote-engine";
 import { zar } from "@/lib/format";
 import { gtagEvent } from "@/lib/gtag";
 import type { QuoteInputs, FabricColour } from "@/lib/types";
 import { FABRIC_COLOURS } from "@/lib/types";
-import { QUOTE_PHOTOS_BY_COLOUR } from "@/components/SitePhotos";
+import { QUOTE_PHOTOS_BY_COLOUR, SitePhotoImage } from "@/components/SitePhotos";
 
 export default function QuoteCalculator({ rates }: { rates: Rates }) {
   const [length, setLength] = useState(5);
@@ -139,10 +138,8 @@ export default function QuoteCalculator({ rates }: { rates: Rates }) {
       <div style={{ background: "var(--color-navy-deep)", color: "#fff", padding: "30px 28px", display: "flex", flexDirection: "column" }}>
 
         <div style={{ position: "relative", aspectRatio: "4 / 3", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
-          <Image
-            src={photo.src}
-            alt={photo.alt}
-            fill
+          <SitePhotoImage
+            photo={photo}
             sizes="(max-width: 760px) 100vw, 420px"
             style={{ objectFit: "cover" }}
           />
