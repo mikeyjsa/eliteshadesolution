@@ -43,7 +43,8 @@ export async function PATCH(req: NextRequest) {
     if (body.email_provider === "outbox" || body.email_provider === "resend" || body.email_provider === "smtp") s.email_provider = body.email_provider;
     if (typeof body.smtp_host === "string") s.smtp_host = body.smtp_host.trim();
     if (typeof body.smtp_user === "string") s.smtp_user = body.smtp_user.trim();
-    if (typeof body.smtp_pass === "string") s.smtp_pass = body.smtp_pass;
+    // An empty password from the browser means "keep the saved credential".
+    if (typeof body.smtp_pass === "string" && body.smtp_pass.length > 0) s.smtp_pass = body.smtp_pass;
     if (typeof body.smtp_port === "number" && Number.isFinite(body.smtp_port)) s.smtp_port = body.smtp_port;
     if (typeof body.smtp_secure === "boolean") s.smtp_secure = body.smtp_secure;
     if (typeof body.facebook_url === "string") s.facebook_url = body.facebook_url.trim();

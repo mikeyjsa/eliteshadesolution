@@ -6,11 +6,24 @@ import type { Settings, EmailLog } from "@/lib/types";
 
 type Tab = "company" | "email" | "analytics" | "templates" | "outbox";
 
-export default function SettingsForm({ settings, emails }: { settings: Settings; emails: EmailLog[] }) {
+export default function SettingsForm({
+  settings,
+  emails,
+  hasSmtpPassword,
+  testRecipient,
+}: {
+  settings: Settings;
+  emails: EmailLog[];
+  hasSmtpPassword: boolean;
+  testRecipient: string;
+}) {
   const [s, setS] = useState(settings);
   const [tab, setTab] = useState<Tab>("company");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [smtpPasswordSaved, setSmtpPasswordSaved] = useState(hasSmtpPassword);
+  const [testEmail, setTestEmail] = useState(testRecipient);
+  const [testStatus, setTestStatus] = useState("");
   const router = useRouter();
 
   function set<K extends keyof Settings>(k: K, v: Settings[K]) { setS({ ...s, [k]: v }); setSaved(false); }
@@ -23,7 +36,22 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
     const response = await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
     setBusy(false);
     setSaved(response.ok);
-    if (response.ok) router.refresh();
+    if (response.ok) {
+      if (s.smtp_pass) setSmtpPasswordSaved(true);
+      setS((current) => ({ ...current, smtp_pass: "" }));
+      router.refresh();
+    }
+  }
+
+  async function sendTestEmail() {
+    setTestStatus("Sending test…");
+    const response = await fetch("/api/settings/test-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: testEmail }),
+    });
+    const data = await response.json().catch(() => ({}));
+    setTestStatus(response.ok ? `Test sent successfully via ${data.channel}.` : data.error || "Test delivery failed.");
   }
 
   const inp: React.CSSProperties = { fontSize: 14, padding: "9px 12px", border: "1px solid var(--color-line)", borderRadius: 9, width: "100%" };
@@ -31,7 +59,7 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
   const card: React.CSSProperties = { background: "#fff", border: "1px solid var(--color-line)", borderRadius: 14, padding: 22, marginBottom: 18 };
   const emailProvider = s.email_provider || (s.resend_api_key?.trim() ? "resend" : "outbox");
   const mailStatus = emailProvider === "smtp"
-    ? (s.smtp_host?.trim() && s.smtp_user?.trim() ? "smtp_live" : "smtp_incomplete")
+    ? (s.smtp_host?.trim() && s.smtp_user?.trim() && (s.smtp_pass || smtpPasswordSaved) ? "smtp_live" : "smtp_incomplete")
     : emailProvider === "resend"
       ? (s.resend_api_key?.trim() ? "resend_live" : "resend_incomplete")
       : "outbox";
@@ -145,7 +173,7 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
                 </div>
                 <div>
                   <label style={lab}>SMTP password</label>
-                  <input type="password" style={inp} value={s.smtp_pass ?? ""} onChange={(e) => set("smtp_pass", e.target.value)} placeholder="Mailbox password" />
+                  <input type="password" autoComplete="new-password" style={inp} value={s.smtp_pass ?? ""} onChange={(e) => set("smtp_pass", e.target.value)} placeholder={smtpPasswordSaved ? "Saved securely — enter to replace" : "Mailbox password"} />
                 </div>
               </div>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: "var(--color-navy)", marginTop: 14 }}>
@@ -154,6 +182,14 @@ export default function SettingsForm({ settings, emails }: { settings: Settings;
               <p style={{ fontSize: 12, color: "var(--color-steel)", marginTop: 8, marginBottom: 16 }}>
                 Use your Afrihost mailbox SMTP details here. Common ports are 465 with secure SMTP on, or 587 with secure SMTP off and STARTTLS negotiated by the server.
               </p>
+              <div style={{ padding: "14px", borderRadius: 10, background: "var(--color-mist)", marginBottom: 16 }}>
+                <label style={lab}>Delivery test recipient</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <input type="email" style={{ ...inp, flex: "1 1 260px" }} value={testEmail} onChange={(e) => setTestEmail(e.target.value)} />
+                  <button type="button" className="btn-ghost" onClick={sendTestEmail}>Send test email</button>
+                </div>
+                {testStatus && <p role="status" style={{ fontSize: 12.5, color: testStatus.includes("successfully") ? "var(--color-signal)" : "#a23c34", margin: "8px 0 0" }}>{testStatus}</p>}
+              </div>
             </>
           )}
           {emailProvider === "resend" && (

@@ -45,6 +45,7 @@ test.describe("admin boundaries", () => {
     { method: "post", path: "/api/teams", status: 401 },
     { method: "post", path: "/api/leads/archive", status: 401 },
     { method: "patch", path: "/api/settings", status: 403 },
+    { method: "post", path: "/api/settings/test-email", status: 403 },
   ] as const;
 
   for (const item of protectedRequests) {

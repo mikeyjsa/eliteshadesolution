@@ -220,8 +220,9 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
 
   let channel: EmailLog["channel"] = "outbox";
   let status: EmailLog["status"] = "queued";
+  let error = "";
 
-  if (provider === "smtp" && smtpHost && smtpUser) {
+  if (provider === "smtp" && smtpHost && smtpUser && smtpPass) {
     try {
       const nodemailer = await import("nodemailer");
       const transporter = nodemailer.createTransport({
@@ -242,9 +243,10 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
       });
       channel = "smtp";
       status = "sent";
-    } catch {
+    } catch (caught) {
       channel = "smtp";
       status = "failed";
+      error = caught instanceof Error ? caught.message : "SMTP delivery failed";
     }
   } else if (provider === "resend" && key) {
     try {
@@ -255,10 +257,20 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
       });
       channel = "resend";
       status = res.ok ? "sent" : "failed";
-    } catch {
+      if (!res.ok) error = `Email provider returned ${res.status}`;
+    } catch (caught) {
       channel = "resend";
       status = "failed";
+      error = caught instanceof Error ? caught.message : "Email delivery failed";
     }
+  } else if (provider === "smtp") {
+    channel = "smtp";
+    status = "failed";
+    error = "SMTP configuration is incomplete.";
+  } else if (provider === "resend") {
+    channel = "resend";
+    status = "failed";
+    error = "Resend API configuration is incomplete.";
   }
 
   return mutate((d) => {
@@ -271,6 +283,7 @@ export async function sendEmail(to: string, subject: string, body: string, cta?:
       sent_at: new Date().toISOString(),
       channel,
       status,
+      ...(error ? { error } : {}),
     };
     d.emails.unshift(log);
     return log;
