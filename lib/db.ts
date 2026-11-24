@@ -8,8 +8,10 @@ import { maybeCreateHourlyBackup } from "./backups";
 import { decryptStoredText, encryptStoredText, maybeMigrateEncryptedFile } from "./data-crypto";
 import { hashPassword, isPasswordHash } from "./passwords";
 
-let memo: DB | null = null;
 let writing: Promise<void> = Promise.resolve();
+const LOCK_FILE = `${DB_FILE}.lock`;
+const LOCK_TIMEOUT_MS = 10_000;
+const STALE_LOCK_MS = 30_000;
 
 function hydrate(db: DB): DB {
   db.installations = (db.installations || []).map((installation) => ({
@@ -39,27 +41,80 @@ function migratePasswordHashes(db: DB) {
   return changed;
 }
 
+async function readDB(): Promise<DB> {
+  const raw = await fs.readFile(DB_FILE, "utf8");
+  return hydrate(JSON.parse(decryptStoredText(raw)) as DB);
+}
+
+async function writeDB(db: DB): Promise<void> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  const tempFile = `${DB_FILE}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+  await fs.writeFile(tempFile, encryptStoredText(JSON.stringify(db, null, 2)), "utf8");
+  await fs.rename(tempFile, DB_FILE);
+}
+
+async function acquireFileLock(): Promise<() => Promise<void>> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  const started = Date.now();
+  while (true) {
+    try {
+      const handle = await fs.open(LOCK_FILE, "wx");
+      return async () => {
+        await handle.close().catch(() => {});
+        await fs.unlink(LOCK_FILE).catch(() => {});
+      };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      const stat = await fs.stat(LOCK_FILE).catch(() => null);
+      if (stat && Date.now() - stat.mtimeMs > STALE_LOCK_MS) {
+        await fs.unlink(LOCK_FILE).catch(() => {});
+        continue;
+      }
+      if (Date.now() - started >= LOCK_TIMEOUT_MS) {
+        throw new Error("Timed out waiting for the database write lock.");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+}
+
 async function ensure(): Promise<DB> {
-  if (memo) return memo;
   try {
-    const raw = await fs.readFile(DB_FILE, "utf8");
-    memo = hydrate(JSON.parse(decryptStoredText(raw)) as DB);
-    if (migratePasswordHashes(memo)) {
-      await fs.writeFile(DB_FILE, encryptStoredText(JSON.stringify(memo, null, 2)), "utf8");
+    let db = await readDB();
+    if (migratePasswordHashes(db)) {
+      const release = await acquireFileLock();
+      try {
+        db = await readDB();
+        if (migratePasswordHashes(db)) await writeDB(db);
+      } finally {
+        await release();
+      }
     }
     await maybeMigrateEncryptedFile(
       () => fs.readFile(DB_FILE, "utf8"),
       (content) => fs.writeFile(DB_FILE, content, "utf8")
     );
+    await maybeCreateHourlyBackup(db);
+    return db;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    memo = hydrate(seedDB());
-    migratePasswordHashes(memo);
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(DB_FILE, encryptStoredText(JSON.stringify(memo, null, 2)), "utf8");
   }
-  await maybeCreateHourlyBackup(memo);
-  return memo;
+
+  const release = await acquireFileLock();
+  try {
+    try {
+      return await readDB();
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      const db = hydrate(seedDB());
+      migratePasswordHashes(db);
+      await writeDB(db);
+      await maybeCreateHourlyBackup(db);
+      return db;
+    }
+  } finally {
+    await release();
+  }
 }
 
 // Read a snapshot of the store.
@@ -69,28 +124,43 @@ export async function getDB(): Promise<DB> {
 
 // Mutate the store under a serialized write lock, then persist.
 export async function mutate<T>(fn: (db: DB) => T): Promise<T> {
-  const db = await ensure();
-  const result = fn(db);
+  let result!: T;
   writing = writing.then(async () => {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(DB_FILE, encryptStoredText(JSON.stringify(db, null, 2)), "utf8");
-    await maybeCreateHourlyBackup(db);
+    const release = await acquireFileLock();
+    try {
+      let db: DB;
+      try {
+        db = await readDB();
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        db = hydrate(seedDB());
+        migratePasswordHashes(db);
+      }
+      result = fn(db);
+      await writeDB(db);
+      await maybeCreateHourlyBackup(db);
+    } finally {
+      await release();
+    }
   });
   await writing;
   return result;
 }
 
 export async function replaceDB(next: DB): Promise<void> {
-  memo = next;
   writing = writing.then(async () => {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(DB_FILE, encryptStoredText(JSON.stringify(next, null, 2)), "utf8");
+    const release = await acquireFileLock();
+    try {
+      await writeDB(hydrate(next));
+    } finally {
+      await release();
+    }
   });
   await writing;
 }
 
 export async function resetDBCache(): Promise<void> {
-  memo = null;
+  // Reads are intentionally uncached so every Passenger process sees live data.
 }
 
 export function uid(prefix = ""): string {
