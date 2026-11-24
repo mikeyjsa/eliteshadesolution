@@ -3,6 +3,20 @@ import { expect, test } from "@playwright/test";
 const publicRoutes = ["/", "/quote", "/shade-sails", "/how-it-works", "/gallery", "/blog", "/about", "/contact"];
 
 test.describe("public site", () => {
+  test("homepage serves dedicated browser and Apple icons", async ({ page, request }) => {
+    await page.goto("/");
+    for (const [rel, path, format] of [
+      ["icon", "/favicon.ico", /image\/(x-icon|vnd\.microsoft\.icon)/],
+      ["icon", "/brand-icon.png", /image\/png/],
+      ["apple-touch-icon", "/apple-touch-icon.png", /image\/png/],
+    ] as const) {
+      await expect(page.locator(`link[rel="${rel}"][href="${path}"]`)).toHaveCount(1);
+      const response = await request.get(path);
+      expect(response.ok()).toBeTruthy();
+      expect(response.headers()["content-type"]).toMatch(format);
+    }
+  });
+
   test("mobile hero loads a static responsive image", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
