@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mutate } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { AnalyticsCredentialError, normalizeAnalyticsPrivateKey } from "@/lib/ga-credentials";
 
 export async function PATCH(req: NextRequest) {
   const me = await currentUser();
   if (!me || me.role !== "admin") return NextResponse.json({ error: "Admin only" }, { status: 403 });
   const body = await req.json();
+  let analyticsKey: string | undefined;
+  if (typeof body.ga_service_account_private_key === "string" && body.ga_service_account_private_key.trim()) {
+    try {
+      analyticsKey = normalizeAnalyticsPrivateKey(
+        body.ga_service_account_private_key,
+        typeof body.ga_service_account_email === "string" ? body.ga_service_account_email : "",
+      );
+    } catch (error) {
+      if (!(error instanceof AnalyticsCredentialError)) throw error;
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+  }
   await mutate((db) => {
     const s = db.settings;
     const str = [
@@ -25,7 +38,6 @@ export async function PATCH(req: NextRequest) {
       "marketing_phone",
       "ga_property_id",
       "ga_service_account_email",
-      "ga_service_account_private_key",
       "paygate_merchant_id",
       "paygate_merchant_key",
       "paygate_passphrase",
@@ -33,6 +45,7 @@ export async function PATCH(req: NextRequest) {
       "paygate_notify_url",
     ] as const;
     for (const k of str) if (typeof body[k] === "string") s[k] = body[k];
+    if (analyticsKey) s.ga_service_account_private_key = analyticsKey;
     // The legacy shared password is intentionally no longer editable in Settings.
     // resend key may be set OR cleared (empty string switches back to Outbox-only)
     if (typeof body.resend_api_key === "string") s.resend_api_key = body.resend_api_key.trim();

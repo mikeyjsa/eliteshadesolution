@@ -10,11 +10,13 @@ export default function SettingsForm({
   settings,
   emails,
   hasSmtpPassword,
+  hasAnalyticsKey,
   testRecipient,
 }: {
   settings: Settings;
   emails: EmailLog[];
   hasSmtpPassword: boolean;
+  hasAnalyticsKey: boolean;
   testRecipient: string;
 }) {
   const [s, setS] = useState(settings);
@@ -22,6 +24,8 @@ export default function SettingsForm({
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [smtpPasswordSaved, setSmtpPasswordSaved] = useState(hasSmtpPassword);
+  const [analyticsKeySaved, setAnalyticsKeySaved] = useState(hasAnalyticsKey);
+  const [saveError, setSaveError] = useState("");
   const [testEmail, setTestEmail] = useState(testRecipient);
   const [testStatus, setTestStatus] = useState("");
   const router = useRouter();
@@ -33,13 +37,24 @@ export default function SettingsForm({
   }
   async function save() {
     setBusy(true);
-    const response = await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
-    setBusy(false);
-    setSaved(response.ok);
-    if (response.ok) {
+    setSaved(false);
+    setSaveError("");
+    try {
+      const response = await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setSaveError(data.error || "Could not save settings.");
+        return;
+      }
+      setSaved(true);
       if (s.smtp_pass) setSmtpPasswordSaved(true);
-      setS((current) => ({ ...current, smtp_pass: "" }));
+      if (s.ga_service_account_private_key?.trim()) setAnalyticsKeySaved(true);
+      setS((current) => ({ ...current, smtp_pass: "", ga_service_account_private_key: "" }));
       router.refresh();
+    } catch {
+      setSaveError("Could not save settings. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -281,13 +296,16 @@ export default function SettingsForm({
               />
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
-              <label style={lab}>Service account private key</label>
+              <label style={lab} htmlFor="ga-private-key">Service account private key</label>
               <textarea
+                id="ga-private-key"
+                autoComplete="off"
+                spellCheck={false}
                 style={{ ...inp, resize: "vertical", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
                 rows={8}
                 value={s.ga_service_account_private_key ?? ""}
                 onChange={(e) => set("ga_service_account_private_key", e.target.value)}
-                placeholder={"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"}
+                placeholder={analyticsKeySaved ? "Key saved. Leave blank to keep it." : "Paste the private key or the complete Google Cloud service account JSON."}
               />
               <p style={{ fontSize: 12, color: "var(--color-steel)", margin: "5px 0 0" }}>
                 Add this service account as a Viewer or Analyst on the GA4 property, then the admin <code>Google Analytics</code> page can pull live reports.
@@ -337,6 +355,7 @@ export default function SettingsForm({
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <button className="btn-brass" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save settings"}</button>
           {saved && <span style={{ color: "var(--color-signal)", fontSize: 13.5, fontWeight: 600 }}>✓ Saved</span>}
+          {saveError && <span role="alert" style={{ color: "#a23c34", fontSize: 13.5 }}>{saveError}</span>}
         </div>
       )}
       <style>{`@media (max-width:560px){ .es-form-grid{ grid-template-columns:1fr !important; } }`}</style>

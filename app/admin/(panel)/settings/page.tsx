@@ -16,9 +16,10 @@ export default async function SettingsPage() {
       <AdminHead eyebrow="Configure" title="Settings" />
       <div style={{ padding: 28 }}>
         <SettingsForm
-          settings={{ ...db.settings, admin_password: "", smtp_pass: "" }}
+          settings={{ ...db.settings, admin_password: "", smtp_pass: "", ga_service_account_private_key: "" }}
           emails={db.emails}
           hasSmtpPassword={!!db.settings.smtp_pass}
+          hasAnalyticsKey={!!db.settings.ga_service_account_private_key?.trim()}
           testRecipient={me.email}
         />
       </div>

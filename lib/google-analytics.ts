@@ -1,4 +1,5 @@
 import type { Settings } from "@/lib/types";
+import { normalizeAnalyticsPrivateKey } from "./ga-credentials";
 
 export interface GoogleAnalyticsDashboard {
   configured: boolean;
@@ -61,10 +62,6 @@ function metricNumber(value?: string | null): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function normalizePrivateKey(key: string): string {
-  return key.replace(/\\n/g, "\n").trim();
-}
-
 function cleanValue(value?: string | null): string {
   return value?.trim() || "";
 }
@@ -99,13 +96,13 @@ export async function getGoogleAnalyticsDashboard(
   }
 
   try {
+    const accountEmail = cleanValue(settings.ga_service_account_email);
+    const privateKey = normalizeAnalyticsPrivateKey(cleanValue(settings.ga_service_account_private_key), accountEmail);
     const { BetaAnalyticsDataClient } = await import("@google-analytics/data");
     const client = new BetaAnalyticsDataClient({
       credentials: {
-        client_email: cleanValue(settings.ga_service_account_email),
-        private_key: normalizePrivateKey(
-          cleanValue(settings.ga_service_account_private_key)
-        ),
+        client_email: accountEmail,
+        private_key: privateKey,
       },
     });
 
